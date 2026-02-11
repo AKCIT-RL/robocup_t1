@@ -1,0 +1,18 @@
+<!-- 用于在遥控比赛中用 AI 辅助操作者 usado para auxiliar operadores com IA em jogos de controle remoto-->
+
+<root BTCPP_format="4" >
+    <include path="./subtrees/subtree_cam_find_and_track_ball.xml" />
+
+     <BehaviorTree ID="MainTree">
+        <Sequence name="root">
+            <ReactiveSequence _while="control_state>=2">
+               <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
+               <SimpleChase _while="assist_chase" stop_dist="0.0" stop_angle="0.3" vx_limit="1.5" />
+               <Sequence _while="assist_kick">
+                  <!-- <StepOnSpot /> -->
+                  <Kick speed_limit="0.9" min_msec_kick="1000"/>
+               </Sequence>
+            </ReactiveSequence>
+        </Sequence>
+     </BehaviorTree>
+</root>

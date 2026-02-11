@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <include path="./subtree_cam_find_and_track_ball.xml"/>
+
+  <include path="./subtree_find_ball.xml"/>
+
+  <include path="./subtree_locate.xml"/>
+
+  <BehaviorTree ID="GoalKeeperPlay">
+    <ReactiveSequence>
+      <SelfLocate mode="trust_direction"/>
+      <SubTree ID="Locate"
+               _while="decision!=&apos;find&apos;"
+               _autoremap="true"/>
+      <ReactiveSequence name="等待对方开球"
+                        _while="wait_for_opponent_kickoff">
+        <SubTree ID="CamFindAndTrackBall"
+                 _autoremap="true"/>
+        <SetVelocity/>
+      </ReactiveSequence>
+      <ReactiveSequence name="已方开球或对方已经开球"
+                        _while="!wait_for_opponent_kickoff">
+        <Sequence _while="ball_out">
+          <SubTree ID="CamFindAndTrackBall"
+                   _autoremap="true"/>
+          <GoBackInField/>
+          <SubTree ID="Locate"
+                   _while="decision!=&apos;find&apos;"
+                   _autoremap="true"/>
+        </Sequence>
+        <ReactiveSequence _while="!ball_out">
+          <ReactiveSequence name="等待对方开球"
+                            _while="wait_for_opponent_kickoff">
+            <SubTree ID="CamFindAndTrackBall"
+                     _autoremap="true"/>
+            <SetVelocity/>
+          </ReactiveSequence>
+          <Sequence name="正常比赛"
+                    _while="!wait_for_opponent_kickoff">
+            <Sequence>
+              <SubTree ID="CamFindAndTrackBall"
+                       _autoremap="true"/>
+              <GoalieDecide decision_out="{decision}"
+                            decision_in="{decision}"
+                            chase_threshold="3.0"/>
+              <GoToGoalBlockingPosition theta_tolerance="0.6"
+                                        _while="decision==&apos;find&apos;"/>
+              <GoToGoalBlockingPosition theta_tolerance="0.6"
+                                        _while="decision == &apos;retreat&apos;"/>
+              <Chase vx_limit="0.8"
+                     vy_limit="0.3"
+                     vtheta_limit="1.0"
+                     dist="0.1"
+                     safe_dist="0.5"
+                     _while="decision == &apos;chase&apos;"/>
+              <Adjust turn_threshold="0.8"
+                      range="0.2"
+                      vx_limit="0.8"
+                      vy_limit="0.6"
+                      vtheta_limit="1.0"
+                      vtheta_factor="4.5"
+                      tangential_speed_far="0.9"
+                      tangential_speed_near="0.3"
+                      _while="decision ==&apos;adjust&apos;"/>
+              <Kick speed_limit="1.2"
+                    min_msec_kick="600"
+                    _while="decision == &apos;kick&apos;"/>
+            </Sequence>
+          </Sequence>
+        </ReactiveSequence>
+      </ReactiveSequence>
+    </ReactiveSequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="Adjust"
+            editable="true">
+      <input_port name="turn_threshold"/>
+      <input_port name="range"/>
+      <input_port name="vx_limit"/>
+      <input_port name="vy_limit"/>
+      <input_port name="vtheta_limit"/>
+      <input_port name="vtheta_factor"/>
+      <input_port name="tangential_speed_far"/>
+      <input_port name="tangential_speed_near"/>
+    </Action>
+    <Action ID="Chase"
+            editable="true">
+      <input_port name="vx_limit"/>
+      <input_port name="vy_limit"/>
+      <input_port name="vtheta_limit"/>
+      <input_port name="dist"/>
+      <input_port name="safe_dist"/>
+    </Action>
+    <Action ID="GoBackInField"
+            editable="true"/>
+    <Action ID="GoToGoalBlockingPosition"
+            editable="true">
+      <input_port name="theta_tolerance"/>
+    </Action>
+    <Action ID="GoalieDecide"
+            editable="true">
+      <input_port name="decision_out"/>
+      <input_port name="decision_in"/>
+      <input_port name="chase_threshold"/>
+    </Action>
+    <Action ID="Kick"
+            editable="true">
+      <input_port name="speed_limit"/>
+      <input_port name="min_msec_kick"/>
+    </Action>
+    <Action ID="SelfLocate"
+            editable="true">
+      <input_port name="mode"/>
+    </Action>
+    <Action ID="SetVelocity"
+            editable="true"/>
+  </TreeNodesModel>
+
+</root>

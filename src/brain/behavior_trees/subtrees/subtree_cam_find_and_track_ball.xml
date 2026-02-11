@@ -1,0 +1,17 @@
+<!-- 摄像头跟踪球 rastreamento da bola com a camera-->
+
+<root BTCPP_format="4" >
+  <BehaviorTree ID="CamFindAndTrackBall">
+     <Sequence name="root">
+         <IfThenElse>
+             <ScriptCondition        name="知道球的位置吗?" code="ball_location_known || tm_ball_pos_reliable" /> <!--sabe a localizacao da bola?-->
+             <Sequence               name="[Yes] -> 追踪球并调整位置" > <!--rastreie a bola e a juste a posicao-->
+                <CamTrackBall />
+             </Sequence>
+             <Sequence               name="[No] -> 寻找之"> <!--procurar-->
+                <CamFindBall />
+             </Sequence>
+         </IfThenElse>
+     </Sequence>
+  </BehaviorTree>
+</root>

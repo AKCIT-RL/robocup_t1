@@ -1,0 +1,104 @@
+brain_node:
+  ros__parameters:
+    game:
+      team_id: 31 # must be consistant with GameControl
+      player_id: 2 # 1 | 2 | 3 | 4 | 5
+      field_type: "custom_size" # adult_size | kid_size | robo_league | custom_size | campus_pa
+      player_role: "striker" # striker | goal_keeper
+      treat_person_as_robot: true 
+      number_of_players: 3
+      
+    robot:
+      robot_height: 1.0 
+      odom_factor: 1.2 
+      vx_factor: 0.50 
+      yaw_offset: 0.0 
+      vx_limit: 1.0 
+      vy_limit: 0.4
+      vtheta_limit: 1.2 
+
+    strategy:
+      ball_confidence_threshold: 50.0 
+      ball_memory_timeout: 5.0 
+      tm_ball_dist_threshold: 2.0 
+      limit_near_ball_speed: false 
+      near_ball_speed_limit: 0.2 
+      near_ball_range: 3.0
+      abort_kick_when_ball_moved: false 
+      lead_switch_threshold: 1.0
+      cooperation: 
+        enable_role_switch: true 
+        ball_control_cost_threshold: 20.0 
+
+    obstacle_avoidance:
+      depth_sample_step: 16 
+      obstacle_min_height: 0.35 
+      grid_size: 0.2 
+      max_x: 3.0 
+      max_y: 5.0 
+      exclusion_x: 0.3 
+      exclusion_y: 0.4 
+      ball_exclusion_radius: 0.0 
+      ball_exclusion_height: 0.3 
+      occupancy_threshold: 1 
+      collision_threshold: 0.3 
+      safe_distance: 2.0 
+      avoid_secs: 3.0 
+      enable_freekick_avoid: false 
+      freekick_start_placing_safe_distance: 0.1 
+      freekick_start_placing_avoid_secs: 2.5 
+      obstacle_memory_msecs: 500. 
+      avoid_during_kick: false 
+      kick_ao_safe_dist: 3.0 
+      kick_ao_use_shoot: false 
+      avoid_during_chase: true 
+      chase_ao_safe_dist: 3.5 
+
+    striker:
+      kick_radius_to_goal: 2.5 
+      avoid_angle_degrees: 25.0 
+      drible_radius: 1.0 
+      kickao_radius: 2.0 
+      drible_circle_degrees: 180.0 
+      enable_kickao: true
+      enable_kick: true
+      adjust_dists:
+        kickinho: 0.5
+        kick: 0.3
+        kickao: 1.45
+        conduzir: 0.05
+        drible: 0.1
+        tolerance: 0.2
+
+    locator:
+      min_marker_count: 5
+      max_residual: 0.3 
+
+    enable_com: true 
+
+    rerunLog:
+      enable_tcp: true 
+      server_ip: "192.168.10.10:9876" 
+      enable_file: false 
+      log_dir: "/home/booster/Workspace/rrlog"
+      max_log_file_mins: 5.0 
+      img_interval: 100000
+    
+    recovery:
+      retry_max_count: 2
+
+    vision:
+        image_topic: "/zed/zed_node/left/image_rect_color" 
+        depth_image_topic: "/zed/zed_node/depth/depth_registered" 
+        cam_pixel_width: 640. 
+        cam_pixel_height: 380. 
+        cam_fov_x: 90.0 
+        cam_fov_y: 60.0 
+    
+    # game_control_ip: "192.168.10.10" # Cabo
+    game_control_ip: "192.168.0.102"
+
+    # for fun and debug
+    sound:
+      enable: false 
+      sound_pack: "espeak" 
