@@ -16,6 +16,5 @@ rosidl_generate_interfaces(booster_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
-ament_export_dependencies(booster_interface)
 
 ament_package()

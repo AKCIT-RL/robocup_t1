@@ -108,6 +108,8 @@ Brain::Brain() : rclcpp::Node("brain_node")
     declare_parameter<double>("rerunLog.max_log_file_mins", 5.0);
     declare_parameter<int>("rerunLog.img_interval", 10);
 
+    declare_parameter<bool>("visualization.enable_local_view", false);
+
     declare_parameter<bool>("sound.enable", false);
     declare_parameter<string>("sound.sound_pack", "espeak");
 
@@ -159,6 +161,7 @@ void Brain::init()
     tree = std::make_shared<BrainTree>(this);
     client = std::make_shared<RobotClient>(this);
     communication = std::make_shared<BrainCommunication>(this);
+    localizationFusion = std::make_shared<LocalizationFusion>(this);
 
     
     locator->init(config->fieldDimensions, config->pfMinMarkerCnt, config->pfMaxResidual);
@@ -250,6 +253,8 @@ void Brain::loadConfig()
     get_parameter("rerunLog.max_log_file_mins", config->rerunLogMaxFileMins);
     get_parameter("rerunLog.img_interval", config->rerunLogImgInterval);
 
+    get_parameter("visualization.enable_local_view", config->visualizationLocalEnable);
+
     get_parameter("striker.kick_radius_to_goal", config->kickRadiusToGoal);
     get_parameter("striker.avoid_angle_degrees", config->avoidAngleDegrees);
     get_parameter("striker.drible_radius", config->dribleRadius);
@@ -338,6 +343,7 @@ void Brain::tick()
     updateMemory();
     handleSpecialStates();
     handleCooperation();
+    localizationFusion->tick();
 
     tree->tick();
 }

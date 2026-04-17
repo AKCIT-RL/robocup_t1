@@ -5,15 +5,15 @@ services:
     image: robocup_public:1.0
     network_mode: host
     runtime: nvidia
-    tty: true 
+    tty: true
     build:
       context: .
       dockerfile: dockerfile.jetson
     environment:
-    - DISPLAY=${DISPLAY}
-    - QT_X11_NO_MITSHM=1
-    - XAUTHORITY=/home/booster/.Xauthority 
-    - FASTRTPS_DEFAULT_PROFILES_FILE=/home/booster/booster_ws/configs/fastdds.xml
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/home/booster/.Xauthority
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/home/booster/booster_ws/configs/fastdds.xml
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ~/.Xauthority:/home/booster/.Xauthority:rw
@@ -26,5 +26,35 @@ services:
         source install/setup.bash &&
         ./scripts/start.sh &&
         echo DONE! &&
+        tail -f /dev/null
+      "
+  booster_brain:
+    container_name: booster_brain
+    build:
+      context: .
+      dockerfile: dockerfile
+    image: robocup_demo:2.0
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    pid: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - XAUTHORITY=/home/booster/.Xauthority
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/home/booster/booster_ws/configs/fastdds.xml
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ~/.Xauthority:/home/booster/.Xauthority:rw
+      - ./src:/home/booster/booster_ws/src
+      - ./scripts:/home/booster/booster_ws/scripts
+      - ./configs:/home/booster/booster_ws/configs
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "
+        source /opt/ros/humble/setup.bash &&
+        ./scripts/sim_start.sh &&
         tail -f /dev/null
       "

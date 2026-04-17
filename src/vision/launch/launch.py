@@ -42,7 +42,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "show_det",
-            default_value='false',
+            default_value='true',
             description="Show detection result"
         ),
         DeclareLaunchArgument(

@@ -112,6 +112,8 @@ public:
         double tolerance;
     } adjustDists;
 
+    bool visualizationLocalEnable = false;
+
     void calcMapLines();
     void calcMapMarkings();
 

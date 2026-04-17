@@ -39,6 +39,7 @@
 #include "brain_communication.h"
 #include "locator.h"
 #include "robot_client.h"
+#include "localization_fusion.h"
 
 using namespace std;
 
@@ -68,6 +69,8 @@ public:
     std::shared_ptr<BrainTree> tree;
     // Communication 对象，里面包含通信相关的操作，主要是双机通信和裁判机通信
     std::shared_ptr<BrainCommunication> communication;
+    // Localization Fusion / Visualization
+    std::shared_ptr<LocalizationFusion> localizationFusion;
 
     // 构造函数，接受 nodeName 创建 ros2 结点
     Brain();

@@ -304,6 +304,9 @@ void BrainConfig::print(ostream &os)
     os << "    maxFileMinutes = " << rerunLogMaxFileMins << endl;
     os << "    imgInterval = " << rerunLogImgInterval << endl;
     os << "----------------------------------------" << endl;
+    os << "Visualization:" << endl;
+    os << "    localEnable = " << visualizationLocalEnable << endl;
+    os << "----------------------------------------" << endl;
     os << "Sound:" << endl;
     os << "    enable = " << soundEnable << endl;
     os << "    soundPack = " << soundPack << endl;

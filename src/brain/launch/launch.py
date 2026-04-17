@@ -11,7 +11,7 @@ from launch.substitutions import LaunchConfiguration
 def handle_configuration(context, *args, **kwargs):
     vision_config_path = os.path.join(os.path.dirname(__file__), '../../../../vision/share/vision/config')
     vision_config_file = os.path.join(vision_config_path, 'vision.yaml')
-    vision_config_local_file = os.path.join(vision_config_path, 'vision_local.yaml')
+    vision_config_local_file = os.path.join(vision_config_path, 'config_local.yaml')
 
     config_path = os.path.join(os.path.dirname(__file__), '../config')
     config_file = os.path.join(config_path, 'config.yaml') 
@@ -50,16 +50,17 @@ def handle_configuration(context, *args, **kwargs):
     if disableCom in ['true', 'True', '1']:
         config['enable_com'] = False
 
+    parameters = [config_file]
+    if sim in ['true', 'True', '1']:
+        parameters.append(config_local_file)
+    parameters.append(config)
+
     return [
         Node(
             package ='brain',
             executable='brain_node',
             output='screen',
-            parameters=[
-                config_file,
-                config_local_file,
-                config
-            ]
+            parameters=parameters
         )
     ]
 
