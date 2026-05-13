@@ -56,6 +56,8 @@ public:
 
     double camPixX = 1280;
     double camPixY = 720;
+    
+    double confidenceValve = 50.0;
 
 
     double camAngleX = deg2rad(90);

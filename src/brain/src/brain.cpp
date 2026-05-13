@@ -98,6 +98,7 @@ Brain::Brain() : rclcpp::Node("brain_node")
     
     declare_parameter<int>("locator.min_marker_count", 5);
     declare_parameter<double>("locator.max_residual", 0.3);
+    declare_parameter<double>("locator.confidence_valve", 50.0);
 
     declare_parameter<bool>("enable_com", false);
 
@@ -108,7 +109,7 @@ Brain::Brain() : rclcpp::Node("brain_node")
     declare_parameter<double>("rerunLog.max_log_file_mins", 5.0);
     declare_parameter<int>("rerunLog.img_interval", 10);
 
-    declare_parameter<bool>("visualization.enable_local_view", false);
+    declare_parameter<bool>("visualization.enable_local_view", true);
 
     declare_parameter<bool>("sound.enable", false);
     declare_parameter<string>("sound.sound_pack", "espeak");
@@ -242,6 +243,7 @@ void Brain::loadConfig()
 
     get_parameter("locator.min_marker_count", config->pfMinMarkerCnt);
     get_parameter("locator.max_residual", config->pfMaxResidual);
+    get_parameter("locator.confidence_valve", config->confidenceValve);
 
     get_parameter("enable_com", config->enableCom);
 
@@ -2214,7 +2216,7 @@ void Brain::detectProcessMarkings(const vector<GameObject> &markingObjs)
     // }
     // // end testing
 
-    const double confidenceValve = 50; // confidence 低于这个阈值, 排除
+    const double confidenceValve = config->confidenceValve; 
     vector<GameObject> markings = {};
     for (int i = 0; i < markingObjs.size(); i++)
     {

@@ -1,23 +1,23 @@
 camera:
   type: "realsense" # realsense or zed
   intrin:
-    fx: 643.898
-    fy: 643.216
-    cx: 649.038
-    cy: 357.21
-    distortion_coeffs: [-0.0553056,0.065975,-0.000994232,2.98548e-05,-0.0216579]
-    distortion_model: 2 # 0: none, 1: opencv format, 2: for rs d455 only
+    fx: 640.0
+    fy: 640.0
+    cx: 640.0
+    cy: 360.0
+    distortion_coeffs: [0.0, 0.0, 0.0, 0.0, 0.0]
+    distortion_model: 0 # 0: none, 1: opencv format, 2: for rs d455 only
   extrin:
-    - [ 0.05659255, 0.03014561, 0.99794215, 0.04217854]
-    - [-0.99839673, 0.00283376, 0.05653273, 0.01405556]
-    - [-0.00112372,-0.9995415 , 0.03025765,-0.01538294]
-    - [ 0.        , 0.        , 0.        , 1.        ]
+    - [ 0.0,  0.0,  1.0, 0.0]
+    - [-1.0,  0.0,  0.0, 0.0]
+    - [ 0.0, -1.0,  0.0, 0.0]
+    - [ 0.0,  0.0,  0.0, 1.0]
   pitch_compensation: 0
   yaw_compensation: 0
   z_compensation: 0
 detection_model:
-  model_path: ./src/vision/model/best_40.engine
-  confidence_threshold: 0.2
+  model_path: ./src/vision/model/best_30.engine
+  confidence_threshold: 0.15
   nms_threshold: 0.4
   classnames: [Ball, Goalpost, Person, LCross, TCross, XCross, PenaltyPoint, Opponent, BRMarker]
   post_process:
@@ -26,10 +26,10 @@ detection_model:
       Ball: 0.4
       Goalpost: 0.4
       Person: 0.4
-      LCross: 0.3
-      TCross: 0.3
-      XCross: 0.3
-      PenaltyPoint: 0.3
+      LCross: 0.15
+      TCross: 0.15
+      XCross: 0.15
+      PenaltyPoint: 0.15
       Opponent: 0.4
       BRMarker: 0.2
 # segmentation_model:

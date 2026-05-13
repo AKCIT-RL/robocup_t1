@@ -1322,7 +1322,7 @@ NodeStatus Kick::onStart() {
     double vxLimit = 1.2, vyLimit = 0.6;
     if(brain->data->kickType == "conduzir")
     {
-      vxLimit = 0.6;
+      vxLimit = 1.2;
       auto goalPostAngles = brain->getGoalPostAngles(brain->config->goalPostMargin);
       double theta_l = goalPostAngles[0]; 
       double theta_r = goalPostAngles[1]; 
