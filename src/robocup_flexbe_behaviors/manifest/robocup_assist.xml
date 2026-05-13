@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="RoboCup Assist">
+
+	<executable package_path="robocup_flexbe_behaviors.robocup_assist_sm" class="RobocupAssistSM" />
+	<tagstring>robocup, assist, teleop</tagstring>
+	<author>RoboCup Team</author>
+	<date>May 10 2026</date>
+	<description>
+		AI-assisted teleoperation behavior for RoboCup.
+		Executes the assist.xml BehaviorTree which tracks ball and assists with chase and kick.
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

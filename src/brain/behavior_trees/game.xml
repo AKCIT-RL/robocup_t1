@@ -1,6 +1,6 @@
 <!-- 正式比赛专用 jogo normal de acordo com a competicao oficial-->
 
-<root BTCPP_format="4">
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
     <include path="./subtrees/subtree_cam_find_and_track_ball.xml" />
     <include path="./subtrees/subtree_striker_play.xml" />
     <include path="./subtrees/subtree_goal_keeper_play.xml" />

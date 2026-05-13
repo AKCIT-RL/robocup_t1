@@ -1,0 +1,33 @@
+bt_server:
+  ros__parameters:
+    # BehaviorTree execution parameters
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    
+    # Default behavior tree XML file
+    # NOTE: Use absolute path or package://package_name/ format
+    # For now using install path - will be set in launch file
+    default_bt_xml_filename: "/home/booster/booster_ws/install/brain/share/brain/behavior_trees/game.xml"
+    
+    # Groot monitoring for BT visualization
+    enable_groot_monitoring: true
+    groot_zmq_publisher_port: 1666
+    groot_zmq_server_port: 1667
+    
+    # BehaviorTree.CPP plugin list
+    plugin_lib_names:
+      # Standard BT nodes from brain package
+      - brain_bt_nodes
+      
+      # If you create custom BT nodes later (Fase 6), add them here:
+      # - robocup_bt_nodes
+    
+    # Blackboard persistence
+    always_reset_initial_pose: false
+    
+    # Error recovery
+    error_code_names:
+      - success
+      - failure
+      - canceled

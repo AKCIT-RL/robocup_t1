@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robocup_flexbe_behaviors</name>
+  <version>1.0.0</version>
+  <description>FlexBE behaviors for RoboCup soccer robot using existing BehaviorTree.CPP XML files</description>
+  <maintainer email="robotics@robocup.com">RoboCup Team</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>flexbe_core</depend>
+  <depend>flexbe_states</depend>
+  <depend>flex_bt_flexbe_states</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <flexbe_behaviors />
+  </export>
+
+</package>

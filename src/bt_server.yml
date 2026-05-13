@@ -1,0 +1,9 @@
+bt_server:
+  ros__parameters:
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    always_reload_bt_xml: false
+    default_bt_xml_filename: "/home/booster/booster_ws/src/brain/behavior_trees"
+    plugin_lib_names:
+      - brain_bt_nodes

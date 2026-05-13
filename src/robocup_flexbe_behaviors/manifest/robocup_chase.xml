@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="RoboCup Chase">
+
+	<executable package_path="robocup_flexbe_behaviors.robocup_chase_sm" class="RobocupChaseSM" />
+	<tagstring>robocup, chase, demo</tagstring>
+	<author>RoboCup Team</author>
+	<date>May 10 2026</date>
+	<description>
+		Ball chasing demonstration behavior for RoboCup.
+		Executes the chase.xml BehaviorTree which finds and chases the ball with audio feedback.
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

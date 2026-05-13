@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="RoboCup Chase with Feedback">
+
+	<executable package_path="robocup_flexbe_behaviors.robocup_chase_with_feedback_sm" class="RobocupChaseWithFeedbackSM" />
+	<tagstring>robocup, chase, vision, sound</tagstring>
+	<author>RoboCup Team</author>
+	<date>Sun May 12 2026</date>
+	<description>
+		Enhanced ball chase behavior with vision feedback and sound notifications.
+		Demonstrates integration of custom FlexBE states with BehaviorTree execution.
+		
+		Features:
+		- Plays sound notification on start
+		- Checks ball detection before chase
+		- Executes chase.xml BehaviorTree
+		- Provides audio feedback on completion
+	</description>
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

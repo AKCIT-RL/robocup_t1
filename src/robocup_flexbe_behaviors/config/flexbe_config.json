@@ -1,0 +1,19 @@
+{
+  "default_package": "robocup_flexbe_behaviors",
+  "behavior_path": "",
+  "state_path": "",
+  "runtime_timeout": 10,
+  "default_behaviors_folder": "",
+  "code_indentation": 2,
+  "gridsize": 50,
+  "editor_command": "code $FILE:$LINE",
+  "compiler_debug": false,
+  "mirror_state_colors": true,
+  "synthesis_enabled": false,
+  "synthesis_topic": "/flexbe/synthesis",
+  "default_package_path": "",
+  "explicit_states": [],
+  "explicit_packages": ["robocup_flexbe_behaviors", "robocup_flexbe_states", "flexbe_states", "flex_bt_flexbe_states"],
+  "automatic_reload": true,
+  "compact_symbol": "&#8594;"
+}

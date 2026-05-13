@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="RoboCup Game">
+
+	<executable package_path="robocup_flexbe_behaviors.robocup_game_sm" class="RobocupGameSM" />
+	<tagstring>robocup, game, official, competition</tagstring>
+	<author>RoboCup Team</author>
+	<date>May 10 2026</date>
+	<description>
+		Official game behavior for RoboCup competition.
+		Executes the game.xml BehaviorTree with full striker, goalkeeper, freekick, and localization logic.
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

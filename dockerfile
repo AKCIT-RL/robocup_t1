@@ -32,8 +32,11 @@ RUN apt-get update && \
     git \
     gedit \
     python3-pip \
+    python3-rosdep2 \
     nano \
     ros-humble-rviz2 \
+    ros-humble-bondcpp \
+    libxcb-cursor0 \
     libzmq3-dev \
     wget \
     g++ \
@@ -102,7 +105,7 @@ RUN cd /tmp && \
     unzip rerun_cpp_sdk.zip && \
     cd rerun_cpp_sdk && \
     mkdir build && cd build && \
-    cmake .. && \
+    cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && \
     make install && \
     ldconfig && \
@@ -119,9 +122,26 @@ COPY internal_sdk /usr/local/include/booster_internal
 
 RUN chown -R booster:booster /home/booster
 
+# Initialize rosdep (must be done as root)
+RUN rosdep init || true
+
 USER $USER_NAME
 
+# Update rosdep and install dependencies for flexbe and other packages
+# Skip keys that will be installed manually (behaviortree-cpp) or via pip (python packages)
+RUN rosdep update && \
+    bash -c "source /opt/ros/humble/setup.bash && \
+    rosdep install --from-paths src --ignore-src -r -y \
+    --skip-keys='behaviortree_cpp python3-pydantic python3-fastapi python3-jinja2 python3-uvicorn python3-websockets pygame' || true"
+
+# Install Python dependencies that are not available via apt
+RUN pip3 install --user pydantic fastapi jinja2 uvicorn websockets pygame
+
 RUN bash -c "source /opt/ros/humble/setup.bash && ./scripts/build.sh"
+
+# Create symlink for BehaviorTree subtrees (required for relative path resolution)
+RUN ln -sf install/brain/share/brain/behavior_trees/subtrees subtrees
+
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USER_NAME}/.bashrc && \
     echo "source /home/${USER_NAME}/booster_ws/install/setup.bash" >> /home/${USER_NAME}/.bashrc
 

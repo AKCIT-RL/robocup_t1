@@ -1,6 +1,6 @@
 <!-- 用于在遥控比赛中用 AI 辅助操作者 usado para auxiliar operadores com IA em jogos de controle remoto-->
 
-<root BTCPP_format="4" >
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
     <include path="./subtrees/subtree_cam_find_and_track_ball.xml" />
 
      <BehaviorTree ID="MainTree">
