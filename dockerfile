@@ -121,6 +121,8 @@ RUN chown -R booster:booster /home/booster
 
 USER $USER_NAME
 
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
+
 RUN bash -c "source /opt/ros/humble/setup.bash && ./scripts/build.sh"
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USER_NAME}/.bashrc && \
     echo "source /home/${USER_NAME}/booster_ws/install/setup.bash" >> /home/${USER_NAME}/.bashrc
