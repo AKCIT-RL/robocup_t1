@@ -42,7 +42,7 @@
                          _while="decision==&apos;find&apos;"
                          _autoremap="true"/>
               </ReactiveSequence>
-              <Assist _while="decision == 'assist'" vx_limit = "0.2" vy_limit="0.2" />
+              <Assist _while="decision == 'assist'" vx_limit = "1.0" vy_limit="0.5" dist_tolerance="0.25"/>
               <Chase vx_limit="1.2"
                      vy_limit="0.6"
                      vtheta_limit="1.2"
