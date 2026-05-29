@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BehaviorTree Monitor</title>
+    <meta name="description" content="Real-time BehaviorTree visualization monitor inspired by Groot">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css?v=11">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1><span class="logo-icon">🌳</span> BehaviorTree Monitor</h1>
+            <div class="header-right">
+                <!-- Status Legend -->
+                <div class="status-legend" id="status-legend">
+                    <div class="legend-item">
+                        <div class="legend-swatch running"></div>
+                        <span>Running</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch success"></div>
+                        <span>Success</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch failure"></div>
+                        <span>Failure</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch idle"></div>
+                        <span>Idle</span>
+                    </div>
+                </div>
+                <!-- Connection Status -->
+                <div class="connection-status">
+                    <span id="status-indicator" class="status-dot disconnected"></span>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Tree Visualization -->
+            <div class="tree-container">
+                <div class="controls">
+                    <button id="btn-zoom-in">🔍 Zoom In</button>
+                    <button id="btn-zoom-out">🔍 Zoom Out</button>
+                    <button id="btn-fit">📐 Fit to Screen</button>
+                    <button id="btn-reset">🔄 Reset View</button>
+                    <div class="separator"></div>
+                    <button id="btn-collapse-all">📁 Collapse All</button>
+                    <button id="btn-expand-all">📂 Expand All</button>
+                    <input type="text" id="search-box" placeholder="🔎 Search nodes...">
+                </div>
+                <svg id="tree-svg"></svg>
+                <div id="no-data" class="no-data">
+                    <p>⏳ Waiting for BehaviorTree data...</p>
+                    <p class="hint">Make sure brain_node is running with Groot2Publisher enabled</p>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <h2>Execution State</h2>
+                
+                <!-- Node Details (shown on click) -->
+                <div class="panel-section" id="node-details-section">
+                    <h3>🔍 Node Details</h3>
+                    <div id="node-details" class="node-details">
+                        <div class="node-details-empty">Click a node to see details</div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="panel-section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Nodes</span>
+                            <span id="stat-nodes" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Running</span>
+                            <span id="stat-running" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Update Rate</span>
+                            <span id="stat-rate" class="stat-value">0 Hz</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Uptime</span>
+                            <span id="uptime" class="stat-value">0s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Running Nodes -->
+                <div class="panel-section">
+                    <h3>📡 Running Nodes</h3>
+                    <ul id="running-nodes" class="node-list">
+                        <li class="empty">No nodes running</li>
+                    </ul>
+                </div>
+
+                <!-- Blackboard Viewer -->
+                <div class="panel-section">
+                    <h3>📋 Blackboard</h3>
+                    <ul id="blackboard-list" class="blackboard-list">
+                        <li class="blackboard-item"><span class="blackboard-key">Waiting for data...</span></li>
+                    </ul>
+                </div>
+
+                <!-- Live Actions Feed -->
+                <div class="panel-section">
+                    <h3>⚡ Live Actions</h3>
+                    <div id="action-feed" class="action-feed">
+                        <div class="empty">Waiting for execution...</div>
+                    </div>
+                </div>
+
+                <!-- Connection -->
+                <div class="panel-section">
+                    <h3>🔌 Connection</h3>
+                    <div class="connection-info">
+                        <div class="info-item">
+                            <span class="info-label">WebSocket</span>
+                            <span id="ws-status" class="info-value">Disconnected</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Uptime</span>
+                            <span id="ws-uptime" class="info-value">0s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Tooltip -->
+    <div id="bt-tooltip" class="bt-tooltip"></div>
+
+    <script src="/static/bt_visualizer.js?v=11"></script>
+</body>
+</html>

@@ -1,0 +1,740 @@
+/* ===================================================================
+   BT WebMonitor — Groot1-inspired Styles
+   =================================================================== */
+
+/* NOTE: No @import for Google Fonts — containers may be offline.
+   Using system font stack with Inter as preferred if locally available. */
+
+/* --- Reset & Base --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Groot1 color palette */
+    --bg-primary: #1a1d23;
+    --bg-secondary: #22262e;
+    --bg-tertiary: #2a2f38;
+    --bg-surface: #313742;
+    --border-color: #3a4150;
+    --border-hover: #4a5568;
+    
+    --text-primary: #e8ecf1;
+    --text-secondary: #a0aab8;
+    --text-muted: #6b7a8d;
+    
+    /* Status colors (Groot1) */
+    --color-running: #FFC107;
+    --color-running-glow: #FFD54F;
+    --color-success: #4CAF50;
+    --color-success-glow: #66BB6A;
+    --color-failure: #F44336;
+    --color-failure-glow: #EF5350;
+    --color-idle: #555c68;
+    
+    /* Faded colors (Groot1 memory visual) */
+    --color-success-faded: #5a7a5a;
+    --color-failure-faded: #7a5050;
+    
+    --accent: #60a5fa;
+    --accent-glow: rgba(96, 165, 250, 0.25);
+    
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* --- Header --- */
+header {
+    background: var(--bg-secondary);
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+header h1 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+header h1 .logo-icon {
+    font-size: 1.3rem;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.status-dot.connected {
+    background: var(--color-success);
+    box-shadow: 0 0 6px var(--color-success);
+}
+
+.status-dot.connecting {
+    background: var(--color-running);
+    animation: pulse-dot 1.5s infinite;
+}
+
+.status-dot.disconnected {
+    background: var(--color-failure);
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* --- Legend (inline in header) --- */
+.status-legend {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-swatch.running { background: var(--color-running); }
+.legend-swatch.success { background: var(--color-success); }
+.legend-swatch.failure { background: var(--color-failure); }
+.legend-swatch.idle { background: var(--color-idle); }
+
+/* --- Main Content --- */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* --- Tree Container --- */
+.tree-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    position: relative;
+}
+
+.controls {
+    background: var(--bg-secondary);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.controls button {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.controls button:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+}
+
+.controls button:active {
+    transform: scale(0.97);
+}
+
+.controls .separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 0.25rem;
+}
+
+#search-box {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    margin-left: auto;
+    width: 200px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+#search-box:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+#search-box::placeholder {
+    color: var(--text-muted);
+}
+
+#tree-svg {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+#tree-svg:active {
+    cursor: grabbing;
+}
+
+.no-data {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.no-data p {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+
+.no-data .hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* --- Side Panel --- */
+.side-panel {
+    width: 300px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.side-panel h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border-color);
+    letter-spacing: -0.01em;
+}
+
+.panel-section {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-section:last-child {
+    border-bottom: none;
+}
+
+.panel-section h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* --- Stats --- */
+.stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    color: var(--text-muted);
+}
+
+.stat-value {
+    color: var(--accent);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Node Lists --- */
+.node-list {
+    list-style: none;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.node-list li {
+    padding: 0.35rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.2rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.node-list li .node-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-running);
+    flex-shrink: 0;
+    animation: pulse-dot 1s infinite;
+}
+
+.node-list li.empty {
+    color: var(--text-muted);
+    text-align: center;
+    justify-content: center;
+}
+
+/* --- Node Details Panel --- */
+.node-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.node-details .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+}
+
+.node-details .detail-label {
+    color: var(--text-muted);
+}
+
+.node-details .detail-value {
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: right;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.node-details .detail-value.status-running { color: var(--color-running); }
+.node-details .detail-value.status-success { color: var(--color-success); }
+.node-details .detail-value.status-failure { color: var(--color-failure); }
+
+.node-details-empty {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+/* --- Blackboard Viewer --- */
+.blackboard-list {
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.blackboard-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.2rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+}
+
+.blackboard-key {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+}
+
+.blackboard-value {
+    color: var(--accent);
+    font-weight: 500;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blackboard-value.val-true { color: var(--color-success); }
+.blackboard-value.val-false { color: var(--color-failure); }
+
+/* --- Action Feed --- */
+.action-feed {
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem;
+}
+
+.action-feed .empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.action-feed-entry {
+    padding: 0.3rem 0.4rem;
+    margin-bottom: 0.15rem;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    border-left: 3px solid var(--color-idle);
+    transition: background 0.15s;
+}
+
+.action-feed-entry:hover {
+    background: var(--bg-surface);
+}
+
+.action-feed-entry.status-running {
+    border-left-color: var(--color-running);
+}
+
+.action-feed-entry.status-success {
+    border-left-color: var(--color-success);
+}
+
+.action-feed-entry.status-failure {
+    border-left-color: var(--color-failure);
+}
+
+.action-feed-entry .timestamp {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.action-feed-entry .emoji {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.action-feed-entry .feed-node-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.action-feed-entry .status {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+/* --- Last Action --- */
+.last-action {
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.last-action .empty {
+    color: var(--text-muted);
+}
+
+/* --- Connection Info --- */
+.connection-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+}
+
+.info-label {
+    color: var(--text-muted);
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ===================================================================
+   SVG Tree Node Styles (Groot1-inspired)
+   =================================================================== */
+
+.tree-node {
+    cursor: pointer;
+}
+
+/* --- Node shapes with transitions --- */
+.node-shape {
+    stroke-width: 2px;
+    transition: fill 0.4s ease, stroke 0.4s ease, filter 0.4s ease, stroke-width 0.2s ease;
+}
+
+/* IDLE state */
+.tree-node.idle .node-shape {
+    fill: var(--color-idle);
+    stroke: #6b7280;
+}
+
+/* RUNNING state — pulsing glow, NO opacity change (Groot1) */
+.tree-node.running .node-shape {
+    fill: url(#gradient-running);
+    stroke: var(--color-running-glow);
+    stroke-width: 3px;
+    animation: pulse-running 1.2s ease-in-out infinite;
+}
+
+/* SUCCESS state — vibrant with glow */
+.tree-node.success .node-shape {
+    fill: url(#gradient-success);
+    stroke: var(--color-success-glow);
+    filter: drop-shadow(0 0 6px rgba(76, 175, 80, 0.5));
+}
+
+/* FAILURE state — vibrant with glow */
+.tree-node.failure .node-shape {
+    fill: url(#gradient-failure);
+    stroke: var(--color-failure-glow);
+    filter: drop-shadow(0 0 6px rgba(244, 67, 54, 0.5));
+}
+
+/* Faded SUCCESS (Groot1 memory visual: NormalBoundaryColor = QColor(100,150,100)) */
+.tree-node.success-faded .node-shape {
+    fill: var(--color-success-faded);
+    stroke: #6a8a6a;
+    filter: none;
+}
+
+/* Faded FAILURE (Groot1 memory visual) */
+.tree-node.failure-faded .node-shape {
+    fill: var(--color-failure-faded);
+    stroke: #8a6060;
+    filter: none;
+}
+
+/* SKIPPED */
+.tree-node.skipped .node-shape {
+    fill: #4a4a50;
+    stroke: #6a6a70;
+}
+
+/* Highlighted (search / click) */
+.tree-node.highlighted .node-shape {
+    stroke-width: 3px;
+    stroke: var(--accent);
+    filter: drop-shadow(0 0 10px var(--accent));
+}
+
+/* --- Pulsing animation for RUNNING (Groot1: glow only, NO opacity) --- */
+@keyframes pulse-running {
+    0%, 100% {
+        filter: drop-shadow(0 0 4px rgba(255, 193, 7, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 14px rgba(255, 213, 79, 0.7));
+    }
+}
+
+/* --- Node text --- */
+.node-name-text {
+    fill: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    pointer-events: none;
+    user-select: none;
+}
+
+.node-type-label {
+    font-size: 9px;
+    font-family: 'Inter', sans-serif;
+    fill: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* --- Tree links / connections --- */
+.tree-link {
+    fill: none;
+    stroke: #4a5568;
+    stroke-width: 1.5px;
+    transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+/* Active path: root → RUNNING nodes (Groot1 highlight) */
+.tree-link.active-path {
+    stroke: var(--color-running);
+    stroke-width: 2.5px;
+    filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.3));
+}
+
+/* --- SubTree expand/collapse indicator --- */
+.subtree-toggle {
+    cursor: pointer;
+    fill: var(--accent);
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+}
+
+.subtree-toggle:hover {
+    fill: var(--text-primary);
+}
+
+/* --- Custom tooltip --- */
+.bt-tooltip {
+    position: fixed;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 300px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.bt-tooltip.visible {
+    opacity: 1;
+}
+
+.bt-tooltip .tt-name {
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.bt-tooltip .tt-type {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+
+.bt-tooltip .tt-status {
+    margin-top: 0.2rem;
+    font-weight: 500;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+/* --- Keyboard shortcut hints --- */
+.kbd {
+    display: inline-block;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    color: var(--text-muted);
+    margin-left: 0.3rem;
+    vertical-align: middle;
+}
