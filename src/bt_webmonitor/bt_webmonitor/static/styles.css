@@ -168,6 +168,64 @@ header h1 .logo-icon {
     position: relative;
 }
 
+/* --- Tab Bar --- */
+.tab-bar {
+    display: flex;
+    gap: 0;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0 0.5rem;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.tree-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.tree-tab:hover {
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.03);
+}
+
+.tree-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(96, 165, 250, 0.06);
+}
+
+.tab-label {
+    font-weight: 500;
+}
+
+.tab-close {
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 2px;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+
+.tab-close:hover {
+    color: var(--color-failure);
+    background: rgba(244, 67, 54, 0.15);
+}
+
 .controls {
     background: var(--bg-secondary);
     padding: 0.5rem 0.75rem;
@@ -613,6 +671,34 @@ header h1 .logo-icon {
     stroke-width: 3px;
     stroke: var(--accent);
     filter: drop-shadow(0 0 10px var(--accent));
+}
+
+/* SubTree portal nodes — dashed border, special hover */
+.node-shape.subtree-portal {
+    stroke-dasharray: 6 3;
+    stroke-width: 2.5px;
+}
+
+.tree-node.idle .node-shape.subtree-portal {
+    fill: #3a4560;
+    stroke: #5a7aa0;
+}
+
+.tree-node .subtree-arrow {
+    fill: var(--text-muted);
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.tree-node:hover .node-shape.subtree-portal {
+    fill: #445070;
+    stroke: var(--accent);
+    filter: drop-shadow(0 0 6px var(--accent-glow));
+    cursor: pointer;
+}
+
+.tree-node:hover .subtree-arrow {
+    fill: var(--accent);
 }
 
 /* --- Pulsing animation for RUNNING (Groot1: glow only, NO opacity) --- */

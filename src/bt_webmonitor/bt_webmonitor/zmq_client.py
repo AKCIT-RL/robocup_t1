@@ -195,18 +195,13 @@ class Groot2Client:
                         
                         # Get both ID and name attributes
                         node_id = elem.get('ID', '')
-                        node_name = elem.get('name', elem.tag)
+                        node_name = elem.get('name', '')
                         
-                        # Priority: ID (English) > name (may be Chinese) > tag
-                        display_name = node_id if node_id else node_name
-                        
-                        # Try to translate common Chinese action names to English
-                        original_name = display_name
-                        display_name = self._translate_node_name(display_name)
-                        
-                        # Log translation if it changed
-                        if original_name != display_name and self.logger:
-                            self.logger.debug(f"Translated '{original_name}' -> '{display_name}'")
+                        # Name resolution priority:
+                        # 1. ID — always the C++ class name, always English
+                        # 2. name with Chinese stripped — keep only ASCII parts
+                        # 3. XML tag name (elem.tag)
+                        display_name = node_id if node_id else self._sanitize_name(node_name, elem.tag)
                         
                         node_type = elem.tag
                         
@@ -268,106 +263,32 @@ class Groot2Client:
                 self.logger.error(f"Failed to parse tree XML: {e}")
             return None
     
-    def _translate_node_name(self, name: str) -> str:
-        """Translate common Chinese node names to English."""
-        # Full phrase translations first (more specific)
-        full_translations = {
-            '黑色 pickup时，先走到黑球': 'Pickup Black Ball First',
-            '包一用于控着换状的开关': 'Control Switch Package',
-            '当用于控着换的开关，3分': 'Control Switch 3min',
-            'AutoGetU当前没过半时对战, 或者补状态': 'AutoGetU NotHalfTime or CompensateState',
-            '没到s时间, 正常Game': 'NotTimeS NormalGame',
-            '在场内外自己的位段位置': 'InField OwnPosition',
-            '在场时外自己的段位置': 'OutField OwnPosition',
-            '始好WaitGameStart': 'WaitGameStart',
-            '任意人在活区选好': 'AnyPersonInActiveArea',
-            '正常Game': 'NormalGame',
-            '在场内外自己的段位置': 'FieldPosition',
-        }
+    def _sanitize_name(self, name: str, fallback: str = 'Node') -> str:
+        """Sanitize node name by stripping non-ASCII (Chinese) characters.
         
-        # Try full phrase translation first
-        for chinese, english in full_translations.items():
-            if chinese in name:
-                return english
+        Keeps only English letters, digits, and common symbols.
+        Falls back to the XML tag name if nothing useful remains.
+        """
+        import re
         
-        # Word-by-word translations
-        word_translations = {
-            '黑色': 'Black',
-            'pickup时': 'Pickup',
-            '先走到': 'MoveTo',
-            '黑球': 'BlackBall',
-            '当前': 'Current',
-            '没过': 'NotPassed',
-            '半时': 'HalfTime',
-            '对战': 'Battle',
-            '或者': 'Or',
-            '补状态': 'CompensateState',
-            '没到': 'NotReached',
-            '时间': 'Time',
-            '正常': 'Normal',
-            '在场': 'InField',
-            '场内': 'InField',
-            '场外': 'OutField',
-            '自己的': 'Own',
-            '位段': 'Position',
-            '位置': 'Position',
-            '段位': 'Rank',
-            '始好': 'Start',
-            '任意': 'Any',
-            '人在': 'PersonIn',
-            '活区': 'ActiveArea',
-            '选好': 'Selected',
-            '包一': 'Package',
-            '用于': 'For',
-            '控着': 'Control',
-            '换状': 'Change',
-            '的': '',
-            '开关': 'Switch',
-            '分': 'Min',
-            '比赛': 'Game',
-            '进攻': 'Attack',
-            '防守': 'Defense',
-            '守门员': 'Goalkeeper',
-            '正在比赛': 'InGame',
-            '未在比赛': 'NotInGame',
-            '机器人': 'Robot',
-            '人在移动中': 'PersonMoving',
-            '移动': 'Move',
-            '踢球': 'Kick',
-            '射门': 'Shoot',
-            '等待': 'Wait',
-            '停止': 'Stop',
-            '开始': 'Start',
-            '完成': 'Finish',
-            '检查': 'Check',
-            '设置': 'Set',
-            '获取': 'Get',
-            '寻找': 'Find',
-            '追踪': 'Track',
-            '对齐': 'Align',
-            '定位': 'Locate',
-            '比赛中': 'InMatch',
-            '非比赛中': 'NotInMatch',
-            '是': 'Is',
-            '不是': 'IsNot',
-            '有': 'Has',
-            '没有': 'HasNot',
-            '当': 'When',
-            '到': 'Reach',
-            '走': 'Go',
-            '跑': 'Run',
-            '站': 'Stand',
-        }
+        if not name:
+            return fallback
         
-        # Apply word-by-word translation
-        result = name
-        for chinese, english in word_translations.items():
-            result = result.replace(chinese, english)
+        # Keep only ASCII printable characters (letters, digits, punctuation)
+        ascii_only = re.sub(r'[^\x20-\x7E]', '', name)
         
-        # Clean up multiple spaces
-        result = ' '.join(result.split())
+        # Clean up artifacts: multiple spaces, leading/trailing junk
+        ascii_only = re.sub(r'\s+', ' ', ascii_only).strip()
         
-        return result if result else name
+        # Remove orphaned brackets/arrows: "[] ->" etc.
+        ascii_only = re.sub(r'^\[?\]?\s*->\s*', '', ascii_only)
+        ascii_only = re.sub(r'\s*->\s*\[?\]?\s*$', '', ascii_only)
+        
+        # If nothing useful remains, use fallback
+        if not ascii_only or len(ascii_only) < 2:
+            return fallback
+        
+        return ascii_only
     
     def start_monitoring(self):
         """Start background thread to monitor status updates."""
