@@ -49,6 +49,12 @@ class BtVisualizer {
         // Blackboard polling interval
         this._blackboardInterval = null;
         
+        // Tab system — each tab shows a different BehaviorTree
+        this.tabs = [];            // [{id: 'game', label: 'game', closable: false}]
+        this.activeTabId = null;   // Currently visible tree ID
+        this.treesByName = {};     // {treeName: [nodes...]}
+        this.tabZoomStates = {};   // {tabId: d3.zoomTransform} — remember zoom per tab
+        
         this.init();
     }
     
@@ -112,6 +118,135 @@ class BtVisualizer {
         // Update stats & blackboard periodically
         setInterval(() => this.updateStats(), 1000);
         this._blackboardInterval = setInterval(() => this.fetchBlackboard(), 2000);
+    }
+    
+    // =================================================================
+    // Tab System
+    // =================================================================
+    
+    _initTabs(treeData) {
+        /**
+         * Build tab data from tree structure.
+         * Only the main tree (first one) gets a permanent tab.
+         * SubTree portals open closable tabs on click.
+         */
+        this.treesByName = {};
+        
+        // Group nodes by their 'tree' property
+        (treeData.nodes || []).forEach(n => {
+            const treeName = n.tree || 'unknown';
+            if (!this.treesByName[treeName]) {
+                this.treesByName[treeName] = [];
+            }
+            this.treesByName[treeName].push(n);
+        });
+        
+        const treeNames = Object.keys(this.treesByName);
+        if (treeNames.length === 0) return;
+        
+        // Main tree is the first one (usually 'MainTree')
+        let mainTree = treeNames[0];
+        
+        // Only create the main tab if tabs haven't been set up yet
+        if (this.tabs.length === 0) {
+            this.tabs = [{ id: mainTree, label: mainTree, closable: false }];
+            this.activeTabId = mainTree;
+        }
+        
+        this._renderTabBar();
+    }
+    
+    _renderTabBar() {
+        const tabBar = document.getElementById('tab-bar');
+        if (!tabBar) return;
+        
+        // Clear safely
+        tabBar.replaceChildren();
+        
+        this.tabs.forEach(tab => {
+            const tabEl = document.createElement('div');
+            tabEl.className = 'tree-tab' + (tab.id === this.activeTabId ? ' active' : '');
+            tabEl.dataset.tabId = tab.id;
+            
+            const labelEl = document.createElement('span');
+            labelEl.className = 'tab-label';
+            labelEl.textContent = tab.label;
+            tabEl.appendChild(labelEl);
+            
+            // Click to switch tab
+            tabEl.addEventListener('click', () => this._switchTab(tab.id));
+            
+            // Close button (only for closable tabs)
+            if (tab.closable) {
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'tab-close';
+                closeBtn.textContent = '×';
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._closeTab(tab.id);
+                });
+                tabEl.appendChild(closeBtn);
+            }
+            
+            tabBar.appendChild(tabEl);
+        });
+    }
+    
+    _switchTab(tabId) {
+        if (tabId === this.activeTabId) return;
+        if (!this.treesByName[tabId]) return;
+        
+        // Save zoom state for current tab
+        if (this.activeTabId) {
+            const currentTransform = d3.zoomTransform(this.svg.node());
+            this.tabZoomStates[this.activeTabId] = currentTransform;
+        }
+        
+        this.activeTabId = tabId;
+        this._renderTabBar();
+        this.renderTree();
+        
+        // Restore zoom state for this tab (or fit)
+        const savedZoom = this.tabZoomStates[tabId];
+        if (savedZoom && savedZoom.k !== 1) {
+            this.svg.call(this.zoom.transform, savedZoom);
+        } else {
+            this.fitToScreen();
+        }
+    }
+    
+    _openSubtreeTab(subtreeRef) {
+        if (!subtreeRef || !this.treesByName[subtreeRef]) return;
+        
+        // Check if tab already exists
+        const existing = this.tabs.find(t => t.id === subtreeRef);
+        if (!existing) {
+            this.tabs.push({
+                id: subtreeRef,
+                label: subtreeRef,
+                closable: true
+            });
+        }
+        
+        this._switchTab(subtreeRef);
+    }
+    
+    _closeTab(tabId) {
+        // Can't close main tab
+        const tab = this.tabs.find(t => t.id === tabId);
+        if (!tab || !tab.closable) return;
+        
+        this.tabs = this.tabs.filter(t => t.id !== tabId);
+        delete this.tabZoomStates[tabId];
+        
+        // If closing active tab, switch to main tab
+        if (this.activeTabId === tabId) {
+            this.activeTabId = this.tabs[0].id;
+            this.renderTree();
+            this.fitToScreen();
+        }
+        
+        this._renderTabBar();
     }
     
     _createGradient(defs, id, stops) {
@@ -210,17 +345,36 @@ class BtVisualizer {
         document.getElementById('no-data').style.display = 'none';
         
         if (treeData.nodes && treeData.nodes.length > 0) {
+            // Initialize tab system from tree data
+            this._initTabs(treeData);
             this.renderTree();
         }
     }
     
     buildHierarchy(nodes, nodesByUid) {
+        /**
+         * Build hierarchy for the ACTIVE TAB only.
+         * SubTree nodes are rendered as leaf nodes (not expanded inline).
+         * They become clickable "portals" that open new tabs.
+         */
         if (!nodes || nodes.length === 0) return null;
         
-        // Find the root node
+        // Filter to only nodes belonging to the active tree
+        const activeTreeId = this.activeTabId;
+        const treeNodes = activeTreeId
+            ? nodes.filter(n => n.tree === activeTreeId)
+            : nodes;
+        
+        if (treeNodes.length === 0) return null;
+        
+        // Build lookup for tree nodes only
+        const treeNodesByUid = {};
+        treeNodes.forEach(n => { treeNodesByUid[n.uid] = n; });
+        
+        // Find root: node not referenced as child by any other node in this tree
         const childUids = new Set();
-        nodes.forEach(n => (n.children || []).forEach(c => childUids.add(c)));
-        let root = nodes.find(n => !childUids.has(n.uid)) || nodes[0];
+        treeNodes.forEach(n => (n.children || []).forEach(c => childUids.add(c)));
+        let root = treeNodes.find(n => !childUids.has(n.uid)) || treeNodes[0];
         
         const visited = new Set();
         
@@ -228,31 +382,20 @@ class BtVisualizer {
             if (visited.has(uid)) return null;
             visited.add(uid);
             
-            const node = nodesByUid[uid];
+            const node = treeNodesByUid[uid];
             if (!node) return null;
             
             const isCollapsed = this.collapsedSubtrees.has(uid);
             
-            // SubTree expansion
-            if (node.type === 'SubTree' && node.subtree_ref && !isCollapsed) {
-                const subtreeNodes = nodes.filter(n => n.tree === node.subtree_ref);
-                const subtreeChildUids = new Set();
-                subtreeNodes.forEach(n => (n.children || []).forEach(c => subtreeChildUids.add(c)));
-                const subtreeRoot = subtreeNodes.find(n => !subtreeChildUids.has(n.uid));
-                
-                if (subtreeRoot) {
-                    const subtreeChildren = (subtreeRoot.children || [])
-                        .map(childUid => buildNode(childUid))
-                        .filter(Boolean);
-                    
-                    return {
-                        ...node,
-                        displayName: node.name,
-                        children: subtreeChildren,
-                        isExpandedSubtree: true,
-                        _collapsed: false
-                    };
-                }
+            // SubTree nodes are LEAF NODES — they open new tabs, not expand inline
+            if (node.type === 'SubTree' && node.subtree_ref) {
+                return {
+                    ...node,
+                    displayName: '📂 ' + (node.name || node.subtree_ref),
+                    children: [],
+                    isSubtreePortal: true,  // Mark as clickable portal
+                    _collapsed: false
+                };
             }
             
             // Normal node
@@ -277,7 +420,7 @@ class BtVisualizer {
         
         this.g.selectAll("*").remove();
         
-        // Build node lookup
+        // Build node lookup (ALL nodes, not just active tree)
         const nodesByUid = {};
         this.treeData.nodes.forEach(n => { nodesByUid[n.uid] = n; });
         
@@ -331,10 +474,20 @@ class BtVisualizer {
             .attr("transform", d => `translate(${d.x},${d.y})`)
             .on("click", (event, d) => {
                 event.stopPropagation();
+                // SubTree portals: single click opens tab
+                if (d.data.isSubtreePortal && d.data.subtree_ref) {
+                    this._openSubtreeTab(d.data.subtree_ref);
+                    return;
+                }
                 this.onNodeClick(d);
             })
             .on("dblclick", (event, d) => {
                 event.stopPropagation();
+                // SubTree portals: dblclick also opens tab
+                if (d.data.isSubtreePortal && d.data.subtree_ref) {
+                    this._openSubtreeTab(d.data.subtree_ref);
+                    return;
+                }
                 this.toggleCollapse(d.data.uid);
             })
             .on("mouseenter", function(event, d) {
@@ -364,14 +517,20 @@ class BtVisualizer {
                     .attr("points", "-55,-16 -28,-26 28,-26 55,-16 55,16 28,26 -28,26 -55,16")
                     .attr("class", "node-shape");
             } else if (d.data.type === 'SubTree') {
-                // Rounded rect with thicker border for subtrees
+                // Special portal style for subtree nodes
                 g.append("rect")
                     .attr("x", -65)
                     .attr("y", -22)
                     .attr("width", 130)
                     .attr("height", 44)
                     .attr("rx", 12)
-                    .attr("class", "node-shape");
+                    .attr("class", "node-shape subtree-portal");
+                // Arrow indicator (clickable hint)
+                g.append("text")
+                    .attr("x", 52)
+                    .attr("y", 5)
+                    .attr("class", "subtree-arrow")
+                    .text("▶");
             } else {
                 // Standard rounded rect for actions/conditions
                 g.append("rect")
