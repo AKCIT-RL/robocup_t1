@@ -76,6 +76,23 @@ void BrainTree::init() {
 
   // 构造完成后，初始化 blackboard entry
   initEntry();
+
+  // Initialize Groot2Publisher for real-time BT visualization
+  if (brain->config->enableGrootMonitoring) {
+      try {
+          publisher = std::make_unique<BT::Groot2Publisher>(tree, brain->config->grootZmqServerPort);
+          RCLCPP_INFO(brain->get_logger(), 
+                     "Groot2Publisher enabled on ports (publisher: %d, server: %d)", 
+                     brain->config->grootZmqPublisherPort,
+                     brain->config->grootZmqServerPort);
+      } catch (const std::exception& e) {
+          RCLCPP_WARN(brain->get_logger(), 
+                     "Failed to initialize Groot2Publisher: %s. Continuing without monitoring.",
+                     e.what());
+      }
+  } else {
+      RCLCPP_INFO(brain->get_logger(), "Groot2Publisher disabled via configuration");
+  }
 }
 
 void BrainTree::initEntry() {

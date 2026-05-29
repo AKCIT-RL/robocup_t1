@@ -76,6 +76,12 @@ brain_node:
 
     enable_com: true 
 
+    # Groot2 BehaviorTree Monitoring
+    groot:
+      enable_monitoring: true     # Enable Groot2Publisher for BT debugging/visualization
+      zmq_publisher_port: 1666    # Standard Groot publisher port (status updates)
+      zmq_server_port: 1667       # Standard Groot server port (tree structure)
+
     rerunLog:
       enable_tcp: true 
       server_ip: "192.168.10.10:9876" 

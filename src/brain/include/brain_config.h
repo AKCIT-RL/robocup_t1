@@ -33,6 +33,11 @@ public:
 
     bool enableCom;             
 
+    // Groot2 monitoring configuration
+    bool enableGrootMonitoring;      // Enable Groot2Publisher for BT visualization
+    int grootZmqPublisherPort;       // ZMQ publisher port (default 1666)
+    int grootZmqServerPort;          // ZMQ server port (default 1667)
+
     bool rerunLogEnableTCP;    
     string rerunLogServerIP;    
     bool rerunLogEnableFile;    

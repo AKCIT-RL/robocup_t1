@@ -101,6 +101,11 @@ Brain::Brain() : rclcpp::Node("brain_node")
 
     declare_parameter<bool>("enable_com", false);
 
+    // Groot2 monitoring parameters
+    declare_parameter<bool>("groot.enable_monitoring", true);
+    declare_parameter<int>("groot.zmq_publisher_port", 1666);
+    declare_parameter<int>("groot.zmq_server_port", 1667);
+
     declare_parameter<bool>("rerunLog.enable_tcp", false);
     declare_parameter<string>("rerunLog.server_ip", "");
     declare_parameter<bool>("rerunLog.enable_file", false);
@@ -244,6 +249,11 @@ void Brain::loadConfig()
     get_parameter("locator.max_residual", config->pfMaxResidual);
 
     get_parameter("enable_com", config->enableCom);
+
+    // Read Groot2 monitoring configuration
+    get_parameter("groot.enable_monitoring", config->enableGrootMonitoring);
+    get_parameter("groot.zmq_publisher_port", config->grootZmqPublisherPort);
+    get_parameter("groot.zmq_server_port", config->grootZmqServerPort);
 
     // get_parameter("rerunLog.enable", config->rerunLogEnable);
     get_parameter("rerunLog.enable_tcp", config->rerunLogEnableTCP);
