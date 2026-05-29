@@ -22,4 +22,13 @@ echo "[START GAME_CONTROLLER]"
 nohup ros2 launch game_controller launch.py > game_controller.log 2>&1 &
 echo "[START SOUND]"
 nohup ros2 run sound_play sound_play_node > sound.log 2>&1 &
+echo "[START BT WEB MONITOR]"
+sleep 3  # Wait for brain_node ZMQ ports to bind
+nohup ros2 launch bt_webmonitor bt_webmonitor.launch.py > bt_monitor.log 2>&1 &
+echo ""
+echo "=========================================="
+echo "🌳 BT Web Monitor available at:"
+echo "   http://localhost:8080"
+echo "=========================================="
+echo ""
 echo "[DONE]"

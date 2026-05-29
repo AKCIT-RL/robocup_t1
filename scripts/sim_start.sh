@@ -12,3 +12,12 @@ nohup ros2 launch game_controller launch.py > game_controller.log 2>&1 &
 nohup ros2 run joy joy_node --ros-args -p autorepeat_rate:=0.0 > joystick.log 2>&1 &
 nohup ros2 run vision vision_node ./src/vision/config/config_local.yaml --ros-args -p use_sim_time:=true -p show_det:=true > vision.log 2>&1 &
 nohup ros2 launch brain launch.py "$@" sim:=true > brain.log 2>&1 &
+echo "[START BT WEB MONITOR]"
+sleep 3  # Wait for brain_node ZMQ ports to bind
+nohup ros2 launch bt_webmonitor bt_webmonitor.launch.py > bt_monitor.log 2>&1 &
+echo ""
+echo "=========================================="
+echo "🌳 BT Web Monitor available at:"
+echo "   http://localhost:8080"
+echo "=========================================="
+echo ""

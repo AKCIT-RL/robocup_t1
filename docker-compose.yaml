@@ -1,6 +1,9 @@
 services:
 
   robocup_demo:
+    ports:
+      - "1666:1666"  
+      - "1667:1667"
     container_name: robocup_demo_v2
     image: robocup_public:1.0
     network_mode: host

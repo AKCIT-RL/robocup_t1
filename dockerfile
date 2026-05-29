@@ -61,7 +61,7 @@ RUN groupadd --gid $GROUP_ID $USER_NAME && \
 RUN usermod -aG sudo $USER_NAME && \
     echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN pip3 install -U colcon-common-extensions
+RUN pip3 install -U colcon-common-extensions fastapi uvicorn websockets pyzmq
 
 RUN cd /tmp && \
     git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git && \
