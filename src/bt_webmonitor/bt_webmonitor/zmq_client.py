@@ -305,46 +305,55 @@ class Groot2Client:
     def _monitor_loop(self):
         """
         Background loop:
-        1. Request tree structure once at start
+        1. Request tree structure once at start (with retries if it fails)
         2. Poll status updates continuously
         
         IMPORTANT: All ZMQ REQ-REP must happen in this thread to avoid state conflicts!
         """
-        # First, request tree structure (only once)
-        try:
-            protocol = 2
-            req_type = ord('T')  # FULLTREE
-            unique_id = struct.unpack('I', os.urandom(4))[0] & 0xFFFFFFFF
-            
-            # Build header with explicit little-endian format
-            header = struct.pack('<BBI', protocol, req_type, unique_id)
-            
-            if self.logger:
-                self.logger.info(f"Requesting tree with header: protocol={protocol}, type={chr(req_type)}, id={unique_id}")
-            
-            self.requester.send(header)
-            response = self.requester.recv_multipart()
-            
-            if len(response) >= 2:
-                xml_string = response[1].decode('utf-8')
+        # Request tree structure (retry until successful)
+        tree_received = False
+        while self._running and not tree_received:
+            try:
+                protocol = 2
+                req_type = ord('T')  # FULLTREE
+                unique_id = struct.unpack('I', os.urandom(4))[0] & 0xFFFFFFFF
                 
-                # Debug: log first 200 chars of XML
+                # Build header with explicit little-endian format
+                header = struct.pack('<BBI', protocol, req_type, unique_id)
+                
                 if self.logger:
-                    preview = xml_string[:200] if len(xml_string) > 200 else xml_string
-                    self.logger.info(f"XML preview: {preview}")
+                    self.logger.info(f"Requesting tree with header: protocol={protocol}, type={chr(req_type)}, id={unique_id}")
                 
-                tree_data = self._parse_tree_xml(xml_string)
+                self.requester.send(header)
+                response = self.requester.recv_multipart()
                 
-                if tree_data:
-                    self.tree_structure = tree_data
-                    if self.on_tree_update:
-                        self.on_tree_update(tree_data)
+                if len(response) >= 2:
+                    xml_string = response[1].decode('utf-8')
+                    
+                    # Debug: log first 200 chars of XML
                     if self.logger:
-                        self.logger.info(f"Tree structure received: {len(tree_data.get('nodes', []))} nodes")
-        except Exception as e:
-            if self.logger:
-                self.logger.error(f"Failed to get tree structure: {e}")
-            return  # Exit thread if we can't get tree
+                        preview = xml_string[:200] if len(xml_string) > 200 else xml_string
+                        self.logger.info(f"XML preview: {preview}")
+                    
+                    tree_data = self._parse_tree_xml(xml_string)
+                    
+                    if tree_data:
+                        self.tree_structure = tree_data
+                        if self.on_tree_update:
+                            self.on_tree_update(tree_data)
+                        if self.logger:
+                            self.logger.info(f"Tree structure received: {len(tree_data.get('nodes', []))} nodes")
+                        tree_received = True
+            except zmq.Again:
+                if self.logger:
+                    self.logger.warn("Timeout requesting tree structure, retrying...")
+                self._reconnect_requester()
+                time.sleep(1.0)
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Failed to get tree structure: {e}, retrying...")
+                self._reconnect_requester()
+                time.sleep(1.0)
         
         # Main monitoring loop
         poll_count = 0
@@ -392,10 +401,12 @@ class Groot2Client:
                 time.sleep(0.1)
                 
             except zmq.Again:
+                self._reconnect_requester()
                 time.sleep(0.1)
             except Exception as e:
                 if self.logger and self._running:
                     self.logger.error(f"Error in monitor loop: {e}")
+                self._reconnect_requester()
                 time.sleep(0.5)
     
     def _request_status(self) -> Optional[Dict[int, str]]:
@@ -434,11 +445,15 @@ class Groot2Client:
             return statuses
             
         except zmq.Again:
-            # Timeout is normal during polling
+            # Timeout is normal during polling.
+            # CRITICAL: We MUST reconnect the requester because a timeout 
+            # leaves the REQ socket in a bad state!
+            self._reconnect_requester()
             return None
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Failed to request status: {e}")
+            self._reconnect_requester()
             return None
     
     def _request_blackboard(self):
