@@ -3,9 +3,64 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cerrno>
+#include <array>
 #include <cstring>
 
 #include "game_controller_node.h"
+
+namespace
+{
+static_assert(sizeof(RobotInfoV19) == 4, "Unexpected GameController v19 RobotInfo size");
+static_assert(sizeof(RobotInfoV20) == 3, "Unexpected GameController v20 RobotInfo size");
+static_assert(sizeof(RoboCupGameControlDataV19) == 198, "Unexpected GameController v19 packet size");
+static_assert(sizeof(RoboCupGameControlDataV20) == 158, "Unexpected GameController v20 packet size");
+
+constexpr size_t kGameControllerHeaderSize = 4;
+constexpr size_t kMaxGameControllerPacketSize = 512;
+
+bool has_valid_header(const uint8_t *buffer, ssize_t length)
+{
+    return length >= static_cast<ssize_t>(kGameControllerHeaderSize + 1) &&
+           std::memcmp(buffer, GAMECONTROLLER_STRUCT_HEADER, kGameControllerHeaderSize) == 0;
+}
+
+uint8_t normalize_v20_penalty(uint8_t penalty)
+{
+    switch (penalty)
+    {
+    case PENALTY_V20_NONE:
+        return PENALTY_NONE;
+    case PENALTY_V20_ILLEGAL_POSITIONING:
+        return PENALTY_ILLEGAL_POSITIONING;
+    case PENALTY_V20_MOTION_IN_SET:
+        return PENALTY_MOTION_IN_SET;
+    case PENALTY_V20_MOTION_IN_STOP:
+        return PENALTY_MOTION_IN_SET;
+    case PENALTY_V20_LOCAL_GAME_STUCK:
+        return PENALTY_LOCAL_GAME_STUCK;
+    case PENALTY_V20_INCAPABLE_ROBOT:
+        return PENALTY_INCAPABLE_ROBOT;
+    case PENALTY_V20_PICK_UP:
+        return PENALTY_PICK_UP;
+    case PENALTY_V20_BALL_HOLDING:
+        return PENALTY_BALL_HOLDING;
+    case PENALTY_V20_LEAVING_THE_FIELD:
+        return PENALTY_LEAVING_THE_FIELD;
+    case PENALTY_V20_PLAYING_WITH_ARMS_HANDS:
+        return PENALTY_PLAYING_WITH_ARMS_HANDS;
+    case PENALTY_V20_PUSHING:
+        return PENALTY_PUSHING;
+    case PENALTY_V20_CAUTIONED:
+        return PENALTY_PUSHING;
+    case PENALTY_V20_SENT_OFF:
+        return PENALTY_SENT_OFF;
+    case PENALTY_V20_SUBSTITUTE:
+        return PENALTY_SUBSTITUTE;
+    default:
+        return penalty;
+    }
+}
+} // namespace
 
 GameControllerNode::GameControllerNode(string name) : rclcpp::Node(name)
 {
@@ -84,17 +139,16 @@ void GameControllerNode::spin()
 {
     // 用来获取远程地址
     sockaddr_in remote_addr;
-    socklen_t remote_addr_len = sizeof(remote_addr);
+    const socklen_t remote_addr_size = sizeof(remote_addr);
 
-    // data 和 msg 在循环内是复用的，后续更新代码需要注意一下这个点
-    HlRoboCupGameControlData data;
-    game_controller_interface::msg::GameControlData msg;
+    std::array<uint8_t, kMaxGameControllerPacketSize> buffer{};
 
     // 进入循环
     while (rclcpp::ok())
     {
         // 从 socket 中接收数据包，期望的是接收完整的数据包
-        ssize_t ret = recvfrom(_socket, &data, sizeof(data), 0, (sockaddr *)&remote_addr, &remote_addr_len);
+        socklen_t remote_addr_len = remote_addr_size;
+        ssize_t ret = recvfrom(_socket, buffer.data(), buffer.size(), 0, (sockaddr *)&remote_addr, &remote_addr_len);
         if (ret < 0)
         {
             RCLCPP_ERROR(get_logger(), "receiving UDP message failed: %s", strerror(errno));
@@ -104,16 +158,45 @@ void GameControllerNode::spin()
         // 获取远端 IP
         string remote_ip = inet_ntoa(remote_addr.sin_addr);
 
-        // 接收到不完整的包或其它非法的包，忽略掉
-        if (ret != sizeof(data))
+        if (!has_valid_header(buffer.data(), ret))
         {
-            RCLCPP_INFO(get_logger(), "packet from %s invalid length=%ld", remote_ip.c_str(), ret);
+            RCLCPP_INFO(get_logger(), "packet from %s invalid header or too short, length=%ld", remote_ip.c_str(), ret);
             continue;
         }
 
-        if (data.version != HL_GAMECONTROLLER_STRUCT_VERSION)
+        uint8_t version = buffer[4];
+        uint8_t packet_number = 0;
+        game_controller_interface::msg::GameControlData msg;
+
+        if (version == GAMECONTROLLER_STRUCT_VERSION_V19)
         {
-            RCLCPP_INFO(get_logger(), "packet from %s invalid version: %d", remote_ip.c_str(), data.version);
+            if (ret != static_cast<ssize_t>(sizeof(RoboCupGameControlDataV19)))
+            {
+                RCLCPP_INFO(get_logger(), "v19 packet from %s invalid length=%ld expected=%zu",
+                            remote_ip.c_str(), ret, sizeof(RoboCupGameControlDataV19));
+                continue;
+            }
+            RoboCupGameControlDataV19 data;
+            std::memcpy(&data, buffer.data(), sizeof(data));
+            handle_packet(data, msg);
+            packet_number = data.packetNumber;
+        }
+        else if (version == GAMECONTROLLER_STRUCT_VERSION_V20)
+        {
+            if (ret != static_cast<ssize_t>(sizeof(RoboCupGameControlDataV20)))
+            {
+                RCLCPP_INFO(get_logger(), "v20 packet from %s invalid length=%ld expected=%zu",
+                            remote_ip.c_str(), ret, sizeof(RoboCupGameControlDataV20));
+                continue;
+            }
+            RoboCupGameControlDataV20 data;
+            std::memcpy(&data, buffer.data(), sizeof(data));
+            handle_packet(data, msg);
+            packet_number = data.packetNumber;
+        }
+        else
+        {
+            RCLCPP_INFO(get_logger(), "packet from %s unsupported version: %d", remote_ip.c_str(), version);
             continue;
         }
 
@@ -124,13 +207,11 @@ void GameControllerNode::spin()
             continue;
         }
 
-        // 处理消息，把 data 数据 copy 到 msg
-        handle_packet(data, msg);
-
         // 将消息发布到 Topic 中
         _publisher->publish(msg);
 
-        RCLCPP_INFO(get_logger(), "handle packet successfully ip=%s, packet_number=%d", remote_ip.c_str(), data.packetNumber);
+        RCLCPP_INFO(get_logger(), "handle v%d packet successfully ip=%s, packet_number=%d",
+                    version, remote_ip.c_str(), packet_number);
     }
 }
 
@@ -158,7 +239,7 @@ bool GameControllerNode::check_ip_white_list(string ip)
  * 将 UDP 数据格式转成自定交 Ros2 message 格式（逐字段复制）
  * 如需更改，一定要仔细各字段
  */
-void GameControllerNode::handle_packet(HlRoboCupGameControlData &data, game_controller_interface::msg::GameControlData &msg)
+void GameControllerNode::handle_packet(const RoboCupGameControlDataV19 &data, game_controller_interface::msg::GameControlData &msg)
 {
 
     // header 是固定长度 4
@@ -169,18 +250,13 @@ void GameControllerNode::handle_packet(HlRoboCupGameControlData &data, game_cont
     msg.version = data.version;
     msg.packet_number = data.packetNumber;
     msg.players_per_team = data.playersPerTeam;
-    msg.game_type = data.gameType;
+    msg.competition_type = data.competitionType;
+    msg.stopped = data.stopped;
+    msg.game_phase = data.gamePhase;
     msg.state = data.state;
+    msg.set_play = data.setPlay;
     msg.first_half = data.firstHalf;
-    msg.kick_off_team = data.kickOffTeam;
-    msg.secondary_state = data.secondaryState;
-    // secondary_state_info 是固定长度 4
-    for (int i = 0; i < 4; i++)
-    {
-        msg.secondary_state_info[i] = data.secondaryStateInfo[i];
-    }
-    msg.drop_in_team = data.dropInTeam;
-    msg.drop_in_time = data.dropInTime;
+    msg.kicking_team = data.kickingTeam;
     msg.secs_remaining = data.secsRemaining;
     msg.secondary_time = data.secondaryTime;
 
@@ -190,64 +266,79 @@ void GameControllerNode::handle_packet(HlRoboCupGameControlData &data, game_cont
     //             "version=%d, packet_number=%d, players_per_team=%d",
     //             msg.header[0], msg.header[1], msg.header[2], msg.header[3],
     //             msg.version, msg.packet_number, msg.players_per_team);
-    // RCLCPP_INFO(get_logger(), "game_type=%d, state=%d, "
-    //             "first_half=%d, kick_off_team=%d, secondary_state=%d, "
-    //             "drop_in_team=%d, drop_in_time=%d, secs_remaining=%d, secondary_time=%d",
-    //             msg.game_type, msg.state, msg.first_half,
-    //             msg.kick_off_team, msg.secondary_state,
-    //             msg.drop_in_team, msg.drop_in_time,
+    // RCLCPP_INFO(get_logger(), "competition_type=%d, stopped=%d, game_phase=%d, "
+    //             "state=%d, set_play=%d, first_half=%d, kicking_team=%d, "
+    //             "secs_remaining=%d, secondary_time=%d",
+    //             msg.competition_type, msg.stopped, msg.game_phase,
+    //             msg.state, msg.set_play, msg.first_half, msg.kicking_team,
     //             msg.secs_remaining, msg.secondary_time);
-    // RCLCPP_INFO(get_logger(), "secondary_state_info: %d %d %d %d",
-    //             msg.secondary_state_info[0], msg.secondary_state_info[1],
-    //             msg.secondary_state_info[2], msg.secondary_state_info[3]);
 
     // teams 是固定长度 2
     for (int i = 0; i < 2; i++)
     {
         msg.teams[i].team_number = data.teams[i].teamNumber;
         msg.teams[i].field_player_colour = data.teams[i].fieldPlayerColour;
+        msg.teams[i].goalkeeper_colour = data.teams[i].goalkeeperColour;
+        msg.teams[i].goalkeeper = data.teams[i].goalkeeper;
         msg.teams[i].score = data.teams[i].score;
         msg.teams[i].penalty_shot = data.teams[i].penaltyShot;
         msg.teams[i].single_shots = data.teams[i].singleShots;
-        msg.teams[i].coach_sequence = data.teams[i].coachSequence;
-        // RCLCPP_INFO(get_logger(), "team[%d]: team_number=%d, field_player_colour=%d, score=%d, penalty_shot=%d, single_shots=%d, coach_sequence=%d",
-        //             i, msg.teams[i].team_number, msg.teams[i].field_player_colour,
-        //             msg.teams[i].score, msg.teams[i].penalty_shot,
-        //             msg.teams[i].single_shots, msg.teams[i].coach_sequence);
+        msg.teams[i].message_budget = data.teams[i].messageBudget;
 
-        // msg.teams[i].players 定义为不定长的数组，注意跟定长数组有所区分
-        int coach_message_len = sizeof(data.teams[i].coachMessage) / sizeof(data.teams[i].coachMessage[0]);
-        msg.teams[i].coach_message.clear(); // 因为 msg 是利用的，切记这里要 clear()
-        for (int j = 0; j < coach_message_len; j++)
-        {
-            msg.teams[i].coach_message.push_back(data.teams[i].coachMessage[j]);
-        }
-
-        // msg.teams[i].cocah
-        msg.teams[i].coach.penalty = data.teams[i].coach.penalty;
-        msg.teams[i].coach.secs_till_unpenalised = data.teams[i].coach.secsTillUnpenalised;
-        msg.teams[i].coach.number_of_warnings = data.teams[i].coach.numberOfWarnings;
-        msg.teams[i].coach.yellow_card_count = data.teams[i].coach.yellowCardCount;
-        msg.teams[i].coach.red_card_count = data.teams[i].coach.redCardCount;
-        msg.teams[i].coach.goal_keeper = data.teams[i].coach.goalKeeper;
-
-        // msg.teams[i].coach_message 定义为不定长的数组，注意跟定长数组有所区分
+        // players is fixed-size in new interface message.
         int players_len = sizeof(data.teams[i].players) / sizeof(data.teams[i].players[0]);
-        msg.teams[i].players.clear(); // 因为 msg 是利用的，切记这里要 clear()
         for (int j = 0; j < players_len; j++)
         {
-            game_controller_interface::msg::RobotInfo rf;
-            rf.penalty = data.teams[i].players[j].penalty;
-            rf.secs_till_unpenalised = data.teams[i].players[j].secsTillUnpenalised;
-            rf.number_of_warnings = data.teams[i].players[j].numberOfWarnings;
-            rf.yellow_card_count = data.teams[i].players[j].yellowCardCount;
-            rf.red_card_count = data.teams[i].players[j].redCardCount;
-            rf.goal_keeper = data.teams[i].players[j].goalKeeper;
-            msg.teams[i].players.push_back(rf);
-            // RCLCPP_INFO(get_logger(), "team[%d].player[%d]: penalty=%d, secs_till_unpenalised=%d, number_of_warnings=%d, yellow_card_count=%d, red_card_count=%d, goal_keeper=%d",
-            //             i, j, rf.penalty, rf.secs_till_unpenalised,
-            //             rf.number_of_warnings, rf.yellow_card_count,
-            //             rf.red_card_count, rf.goal_keeper);
+            msg.teams[i].players[j].penalty = data.teams[i].players[j].penalty;
+            msg.teams[i].players[j].secs_till_unpenalised = data.teams[i].players[j].secsTillUnpenalised;
+            msg.teams[i].players[j].warnings = data.teams[i].players[j].warnings;
+            msg.teams[i].players[j].cautions = data.teams[i].players[j].cautions;
+        }
+    }
+}
+
+void GameControllerNode::handle_packet(const RoboCupGameControlDataV20 &data, game_controller_interface::msg::GameControlData &msg)
+{
+
+    // header 是固定长度 4
+    for (int i = 0; i < 4; i++)
+    {
+        msg.header[i] = data.header[i];
+    }
+    msg.version = data.version;
+    msg.packet_number = data.packetNumber;
+    msg.players_per_team = data.playersPerTeam;
+    msg.competition_type = data.competitionType;
+    msg.stopped = data.stopped;
+    msg.game_phase = data.gamePhase;
+    msg.state = data.state;
+    msg.set_play = data.setPlay;
+    msg.first_half = data.firstHalf;
+    msg.kicking_team = data.kickingTeam;
+    msg.secs_remaining = data.secsRemaining;
+    msg.secondary_time = data.secondaryTime;
+
+    // teams 是固定长度 2
+    for (int i = 0; i < 2; i++)
+    {
+        msg.teams[i].team_number = data.teams[i].teamNumber;
+        msg.teams[i].field_player_colour = data.teams[i].fieldPlayerColour;
+        msg.teams[i].goalkeeper_colour = data.teams[i].goalkeeperColour;
+        msg.teams[i].goalkeeper = data.teams[i].goalkeeper;
+        msg.teams[i].score = data.teams[i].score;
+        msg.teams[i].penalty_shot = data.teams[i].penaltyShot;
+        msg.teams[i].single_shots = data.teams[i].singleShots;
+        msg.teams[i].message_budget = data.teams[i].messageBudget;
+
+        // v20 removed warnings and shifted several penalty enum values. Publish
+        // v19-compatible values so existing strategy code keeps its semantics.
+        int players_len = sizeof(data.teams[i].players) / sizeof(data.teams[i].players[0]);
+        for (int j = 0; j < players_len; j++)
+        {
+            msg.teams[i].players[j].penalty = normalize_v20_penalty(data.teams[i].players[j].penalty);
+            msg.teams[i].players[j].secs_till_unpenalised = data.teams[i].players[j].secsTillUnpenalised;
+            msg.teams[i].players[j].warnings = 0;
+            msg.teams[i].players[j].cautions = data.teams[i].players[j].cautions;
         }
     }
 }
