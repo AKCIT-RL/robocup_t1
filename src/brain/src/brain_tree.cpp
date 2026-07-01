@@ -691,36 +691,16 @@ NodeStatus Assist::tick() {
     return NodeStatus::SUCCESS;
   }
 
-  double vx, vy, vtheta;
-  auto targetPose_r = brain->data->field2robot(targetPose);
-  double targetDir = atan2(targetPose_r.y, targetPose_r.x);
-  double distToObstacle = brain->distToObstacle(targetDir);
-
-  bool avoidObstacle;
-  brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
-  double oaSafeDist;
-  brain->get_parameter("obstacle_avoidance.chase_ao_safe_dist", oaSafeDist);
-
-  if (avoidObstacle && distToObstacle < oaSafeDist) {
-    log("avoid obstacle");
-    auto avoidDir = brain->calcAvoidDir(targetDir, oaSafeDist);
-    const double speed = 0.5;
-    vx = speed * cos(avoidDir);
-    vy = speed * sin(avoidDir);
-    vtheta = brain->data->ball.yawToRobot;
-  } else {
-    vx = targetPose_r.x;
-    vy = targetPose_r.y;
-    vtheta = brain->data->ball.yawToRobot * 4.0;
-  }
-
   double vxLimit, vyLimit;
   getInput("vx_limit", vxLimit);
   getInput("vy_limit", vyLimit);
-  vx = cap(vx, vxLimit, -1.0);
-  vy = cap(vy, vyLimit, -vyLimit);
 
-  brain->client->setVelocity(vx, vy, vtheta, false, false, false);
+  bool avoidObstacle;
+  brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
+
+  brain->client->navigateToPoint(targetPose.x, targetPose.y,
+                                 vxLimit, vyLimit,
+                                 distTolerance, avoidObstacle);
   return NodeStatus::SUCCESS;
 }
 

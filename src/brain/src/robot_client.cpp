@@ -682,3 +682,42 @@ double RobotClient::msecsToCollide(double vx, double vy, double vtheta, double m
 
     return min(maxTime, minDist / norm(vx, vy) * 1000);
 }
+
+bool RobotClient::navigateToPoint(double tx, double ty, double vxLimit, double vyLimit, double distTolerance, bool avoidObstacle) {
+    auto robotPose = brain->data->robotPoseToField;
+    double dist = norm(tx - robotPose.x, ty - robotPose.y);
+
+    // Orientação final: direção para a bola
+    double ttheta = atan2(
+        brain->data->ball.posToField.y - robotPose.y,
+        brain->data->ball.posToField.x - robotPose.x
+    );
+
+    // Verifica se já chegou ao ponto alvo
+    if (dist < distTolerance) {
+        setVelocity(0, 0, 0);
+        return true;
+    }
+
+    // Parâmetros de controle
+    double longRangeThreshold = 1.0;
+    double turnThreshold = 0.4;
+    double vthetaLimit = 1.5;
+    double thetaTolerance = 0.2;
+
+    brain->log->setTimeNow();
+    brain->log->log("debug/navigateToPoint", rerun::TextLog(format(
+        "target: (%.2f, %.2f), dist: %.2f, ttheta: %.2f",
+        tx, ty, dist, ttheta
+    )));
+
+    moveToPoseOnField3(
+        tx, ty, ttheta,
+        longRangeThreshold, turnThreshold,
+        vxLimit, vyLimit, vthetaLimit,
+        distTolerance, distTolerance, thetaTolerance,
+        avoidObstacle
+    );
+
+    return false;
+}

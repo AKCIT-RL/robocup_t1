@@ -136,6 +136,24 @@ public:
 
     int32_t moveToTargetWithKick(float x, float y, float yaw);
 
+    /**
+     * @brief Navega o robô até um ponto (x,y) no campo com desvio de obstáculos.
+     *        Interface simplificada que reutiliza moveToPoseOnField3 internamente.
+     *        O theta final é calculado automaticamente como a direção para a bola.
+     * 
+     * @param tx coordenada x do alvo no sistema do campo
+     * @param ty coordenada y do alvo no sistema do campo
+     * @param vxLimit limite de velocidade em x (default: 0.6)
+     * @param vyLimit limite de velocidade em y (default: 0.5)
+     * @param distTolerance tolerância de distância para considerar chegada (default: 0.3)
+     * @param avoidObstacle se deve desviar de obstáculos (default: true)
+     * 
+     * @return true se o robô já está no ponto alvo (dentro da tolerância)
+     */
+    bool navigateToPoint(double tx, double ty, 
+                         double vxLimit = 0.6, double vyLimit = 0.5,
+                         double distTolerance = 0.3, bool avoidObstacle = true);
+
 private:
     int call(booster_interface::msg::BoosterApiReqMsg msg);
     rclcpp::Publisher<booster_msgs::msg::RpcReqMsg>::SharedPtr publisher;
