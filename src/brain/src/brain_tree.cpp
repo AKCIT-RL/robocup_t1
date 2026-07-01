@@ -678,7 +678,18 @@ NodeStatus Assist::tick() {
 
   Pose2D targetPose;
 
-  // Divisão do campo em 4 zonas ao longo do eixo X
+  // Alinhamento com a bola e o centro do próprio gol
+  targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
+  targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
+  targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) /
+                 (ballPos.x + fd.length / 2.0);
+  if (has2Assists) {
+    targetPose.y += isSecondary ? -0.5 : 0.5;
+  }
+
+  /*
+  
+  // Logica de divisão do campo em 4 zonas ao longo do eixo X
   // Zona 1 (defesa proxima ao go): -fd.length/2 até -fd.length/4   → segundo goleiro
   // Zona 2 (defesa média):    -fd.length/4 até 0                   → 2m atrás da bola, Y alinhado ao gol
   // Zona 3 (ataque perto):     0 até fd.length/4                   → início da grande área, lado oposto da bola
@@ -727,6 +738,7 @@ NodeStatus Assist::tick() {
       targetPose.y += isSecondary ? -0.5 : 0.5;
     }
   }
+  */
 
   // Suavização com filtro exponencial
   static double smoothedX = targetPose.x;
