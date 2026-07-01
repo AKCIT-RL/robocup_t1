@@ -676,12 +676,55 @@ NodeStatus Assist::tick() {
   log(format("has2Assists: %d, isSecondary: %d", has2Assists, isSecondary));
 
   Pose2D targetPose;
-  targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
-  targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
-  targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) /
-                 (ballPos.x + fd.length / 2.0);
-  if (has2Assists) {
-    targetPose.y += isSecondary ? -0.5 : 0.5;
+
+  // Divisão do campo em 4 zonas ao longo do eixo X
+  // Zona 1 (defesa proxima ao go): -fd.length/2 até -fd.length/4   → segundo goleiro
+  // Zona 2 (defesa média):    -fd.length/4 até 0                   → 2m atrás da bola, Y alinhado ao gol
+  // Zona 3 (ataque perto):     0 até fd.length/4                   → início da grande área, lado oposto da bola
+  // Zona 4 (ataque proximo ao gol):  fd.length/4 até fd.length/2   → trave mais distante da bola
+  double zoneBoundary1 = -fd.length / 4.0;  // limite entre zona 1 e 2
+  double zoneBoundary2 = 0.0;               // limite entre zona 2 e 3
+  double zoneBoundary3 = fd.length / 4.0;   // limite entre zona 3 e 4
+
+  if (!isSecondary) {
+    // Assistente primário
+    if (ballPos.x > zoneBoundary3) {
+
+      // ZONA 4
+      log("assist zone 4");
+      targetPose.x = fd.length / 2.0 - fd.penaltyAreaLength;
+      targetPose.y = ballPos.y > 0 ? -fd.goalWidth / 2.0 : fd.goalWidth / 2.0;
+    }
+    else if (ballPos.x > zoneBoundary2) {
+      // ZONA 3
+      log("assist zone 3");
+      targetPose.x = fd.length / 2.0 - fd.penaltyAreaLength;
+      targetPose.y = ballPos.y > 0 ? -fd.penaltyAreaWidth / 2.0 : fd.penaltyAreaWidth / 2.0;
+    }
+    else if (ballPos.x > zoneBoundary1) {
+      // ZONA 2
+      log("assist zone 2");
+      targetPose.x = ballPos.x - 2.0;
+      targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
+      targetPose.y = 0.0;
+    }
+    else {
+      // ZONA 1
+      log("assist zone 1");
+      targetPose.x = -fd.length / 2.0 + distToGoalline;
+
+      // Posiciona no lado oposto da bola dentro do gol
+      targetPose.y = ballPos.y > 0 ? -fd.goalWidth / 4.0 : fd.goalWidth / 4.0;
+    }
+  } else {
+    // Assistente secundário
+    targetPose.x = ballPos.x - 4.0;
+    targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
+    targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) /
+                   (ballPos.x + fd.length / 2.0);
+    if (has2Assists) {
+      targetPose.y += isSecondary ? -0.5 : 0.5;
+    }
   }
 
   double dist = norm(targetPose.x - robotPose.x, targetPose.y - robotPose.y);
