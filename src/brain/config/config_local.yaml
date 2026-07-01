@@ -60,8 +60,8 @@ brain_node:
       drible_radius: 1.0 
       kickao_radius: 2.0 
       drible_circle_degrees: 180.0 
-      enable_kickao: true
-      enable_kick: true
+      enable_kickao: false
+      enable_kick: false
       adjust_dists:
         kickinho: 0.5
         kick: 0.3

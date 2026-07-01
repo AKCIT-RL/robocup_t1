@@ -984,6 +984,7 @@ NodeStatus CalcKickDir::tick() {
   }
 
   bool enableKick = brain->config->enableKick;
+  bool enableKickao = brain->config->enableKickao;
 
   if (!drible)
   {
@@ -1016,7 +1017,7 @@ NodeStatus CalcKickDir::tick() {
     }
 
     if (brain->data->doingPenaltyKick && bPos.x > 0){
-      brain->data->kickType = "kickao";
+      brain->data->kickType = enableKickao ? "kickao" : "kickinho";
     }
 
     if (brain->data->doingKickingOff && bPos.x > 0){
@@ -1465,15 +1466,6 @@ NodeStatus Kick::onRunning() {
     }
     else if(brain->data->ballDetected && brain->data->kickType == "kickao"){
       brain->client->fancyKick(1.0, 0.9);
-
-      Point2D currentBallPos = Point2D{brain->data->ball.posToField.x,
-                                       brain->data->ball.posToField.y};
-
-      if (brain->data->doingPenaltyKick && 
-        brain->data->ballPosDuringPenalty.distanceToPoint(currentBallPos) > 1.0)
-      {
-        brain->data->doingPenaltyKick = false;
-      }
     }
     else if(brain->data->ballDetected && brain->data->kickType == "finesse"){
       //brain->client->rlKickBall(1.0, 0.4);
@@ -1482,12 +1474,22 @@ NodeStatus Kick::onRunning() {
       Point2D currentBallPos = Point2D{brain->data->ball.posToField.x,
                                        brain->data->ball.posToField.y};
 
-      if (brain->data->doingKickingOff && 
+      if (brain->data->doingKickingOff &&
         brain->data->ballPosDuringKickingOff.distanceToPoint(currentBallPos) > 1.0)
       {
         brain->data->doingKickingOff = false;
       }
     }
+
+    if (brain->data->ballDetected && brain->data->doingPenaltyKick) {
+      Point2D currentBallPos = Point2D{brain->data->ball.posToField.x,
+                                       brain->data->ball.posToField.y};
+      if (brain->data->ballPosDuringPenalty.distanceToPoint(currentBallPos) > 1.0)
+      {
+        brain->data->doingPenaltyKick = false;
+      }
+    }
+
     _startTime = brain->get_clock()->now();
 
     return NodeStatus::SUCCESS;
