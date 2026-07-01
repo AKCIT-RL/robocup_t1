@@ -700,7 +700,7 @@ NodeStatus Assist::tick() {
       // ZONA 3
       log("assist zone 3");
       targetPose.x = fd.length / 2.0 - fd.penaltyAreaLength;
-      targetPose.y = ballPos.y > 0 ? -fd.penaltyAreaWidth / 2.0 : fd.penaltyAreaWidth / 2.0;
+      targetPose.y = ballPos.y > 0 ? -fd.penaltyAreaWidth / 3.0 : fd.penaltyAreaWidth / 3.0;
     }
     else if (ballPos.x > zoneBoundary1) {
       // ZONA 2
@@ -727,6 +727,15 @@ NodeStatus Assist::tick() {
       targetPose.y += isSecondary ? -0.5 : 0.5;
     }
   }
+
+  // Suavização com filtro exponencial
+  static double smoothedX = targetPose.x;
+  static double smoothedY = targetPose.y;
+  double alpha = 0.08; // fator de suavização
+  smoothedX += alpha * (targetPose.x - smoothedX);
+  smoothedY += alpha * (targetPose.y - smoothedY);
+  targetPose.x = smoothedX;
+  targetPose.y = smoothedY;
 
   double dist = norm(targetPose.x - robotPose.x, targetPose.y - robotPose.y);
   if (dist < distTolerance &&
@@ -1098,10 +1107,17 @@ NodeStatus StrikerDecide::tick() {
     brain->log->log("debug/striker_decide", rerun::TextLog(msg));
   };
 
-  // Verifica se faz muito tempo sem localização bem-sucedida
+  // Após timeout sem localizar, escaneia por scanDuration ms e depois volta a rastrear a bola, e repete o ciclo periodicamente.
   double activeLocTimeout = brain->get_parameter("strategy.active_loc_timeout_msecs").get_value<double>();
+  double activeLocScanDuration = brain->get_parameter("strategy.active_loc_scan_duration_msecs").get_value<double>();
   double timeSinceLastLoc = brain->msecsSince(brain->data->lastSuccessfulLocalizeTime);
-  bool needActiveLoc = (timeSinceLastLoc > activeLocTimeout);
+  bool needActiveLoc = false;
+  if (timeSinceLastLoc > activeLocTimeout) {
+
+    double cycle = activeLocTimeout + activeLocScanDuration;
+    double phase = fmod(timeSinceLastLoc - activeLocTimeout, cycle);
+    needActiveLoc = (phase < activeLocScanDuration);
+  }
   brain->tree->setEntry<bool>("need_active_loc", needActiveLoc);
 
   double chaseRangeThreshold;
