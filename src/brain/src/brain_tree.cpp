@@ -1021,7 +1021,7 @@ NodeStatus CalcKickDir::tick() {
     }
 
     if (brain->data->doingKickingOff && bPos.x > 0){
-      brain->data->kickType = "finesse";
+      brain->data->kickType = "kickinho";
     }
   }
   else
@@ -1508,15 +1508,6 @@ NodeStatus Kick::onRunning() {
     else if(brain->data->ballDetected && brain->data->kickType == "finesse"){
       //brain->client->rlKickBall(1.0, 0.4);
       brain->client->highKick();
-
-      Point2D currentBallPos = Point2D{brain->data->ball.posToField.x,
-                                       brain->data->ball.posToField.y};
-
-      if (brain->data->doingKickingOff &&
-        brain->data->ballPosDuringKickingOff.distanceToPoint(currentBallPos) > 1.0)
-      {
-        brain->data->doingKickingOff = false;
-      }
     }
 
     if (brain->data->ballDetected && brain->data->doingPenaltyKick) {
@@ -1525,6 +1516,15 @@ NodeStatus Kick::onRunning() {
       if (brain->data->ballPosDuringPenalty.distanceToPoint(currentBallPos) > 1.0)
       {
         brain->data->doingPenaltyKick = false;
+      }
+    }
+
+    if (brain->data->ballDetected && brain->data->doingKickingOff) {
+      Point2D currentBallPos = Point2D{brain->data->ball.posToField.x,
+                                       brain->data->ball.posToField.y};
+      if (brain->data->ballPosDuringKickingOff.distanceToPoint(currentBallPos) > 1.0)
+      {
+        brain->data->doingKickingOff = false;
       }
     }
 
