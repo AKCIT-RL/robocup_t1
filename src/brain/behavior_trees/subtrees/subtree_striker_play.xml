@@ -30,8 +30,14 @@
         </Sequence>
         <ReactiveSequence _while="!ball_out">
           <ReactiveSequence>
-            <SubTree ID="CamFindAndTrackBall"
-                     _autoremap="true"/>
+            <Fallback>
+              <CamScanField _while="need_active_loc"
+                            low_pitch="0.8" high_pitch="0.3"
+                            left_yaw="1.0" right_yaw="-1.0"
+                            msec_cycle="2000" />
+              <SubTree ID="CamFindAndTrackBall"
+                       _autoremap="true"/>
+            </Fallback>
             <CalcKickDir/>
             <Sequence>
               <ReactiveSequence>

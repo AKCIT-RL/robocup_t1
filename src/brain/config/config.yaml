@@ -26,6 +26,7 @@ brain_node:
       near_ball_range: 3.0
       abort_kick_when_ball_moved: false 
       lead_switch_threshold: 1.0
+      active_loc_timeout_msecs: 10000.0
       cooperation: 
         enable_role_switch: true 
         ball_control_cost_threshold: 20.0 

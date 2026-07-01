@@ -121,7 +121,7 @@ void LocalizationFusion::createFieldImage() {
 
     // Draw Assist Zone
     // Zones: X = -L/4, 0 (already drawn as center line), +L/4
-    cv::Scalar zoneLineColor(60, 80, 60); // dark subtle green-gray
+    cv::Scalar zoneLineColor(150, 150, 150); // gray
     auto drawDashedLine = [&](cv::Point2f from, cv::Point2f to, int dashLen = 8, int gapLen = 6) {
         double dx = to.x - from.x;
         double dy = to.y - from.y;

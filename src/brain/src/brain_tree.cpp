@@ -110,6 +110,7 @@ void BrainTree::initEntry() {
 
   setEntry<bool>("we_just_scored", false);
   setEntry<bool>("wait_for_opponent_kickoff", false);
+  setEntry<bool>("need_active_loc", false);
 
   // 自动视觉校准相关
   setEntry<string>("calibrate_state", "pitch");
@@ -1096,6 +1097,12 @@ NodeStatus StrikerDecide::tick() {
     brain->log->setTimeNow();
     brain->log->log("debug/striker_decide", rerun::TextLog(msg));
   };
+
+  // Verifica se faz muito tempo sem localização bem-sucedida
+  double activeLocTimeout = brain->get_parameter("strategy.active_loc_timeout_msecs").get_value<double>();
+  double timeSinceLastLoc = brain->msecsSince(brain->data->lastSuccessfulLocalizeTime);
+  bool needActiveLoc = (timeSinceLastLoc > activeLocTimeout);
+  brain->tree->setEntry<bool>("need_active_loc", needActiveLoc);
 
   double chaseRangeThreshold;
   getInput("chase_threshold", chaseRangeThreshold);
