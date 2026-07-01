@@ -202,9 +202,9 @@ void BrainCommunication::unicastToGameController() {
     {
         // cout << RED_CODE << format("unicastToGameController header=%s version=%d teamId=%d, playerId=%d", gc_return_data.header, gc_return_data.version, brain->config->teamId, brain->config->playerId)
         //     << RESET_CODE << endl;
-        gc_return_data.team = brain->config->teamId;
-        gc_return_data.player = brain->config->playerId; // return data 的id是1,2,3,4
-        gc_return_data.message = GAMECONTROLLER_RETURN_MSG_ALIVE;
+        gc_return_data.teamNum = brain->config->teamId;
+        gc_return_data.playerNum = brain->config->playerId; // return data 的id是1,2,3,4
+        gc_return_data.fallen = 0; // TODO: reportar estado de queda real quando disponível
 
         int ret = sendto(_gc_send_socket, &gc_return_data, sizeof(gc_return_data), 0, (sockaddr *)&_gcsaddr, sizeof(_gcsaddr));
         if (ret < 0)

@@ -37,7 +37,7 @@ private:
     bool _unicast_gamecontrol_flag = false;
     int _gc_send_socket = -1;
     sockaddr_in _gcsaddr;
-    HlRoboCupGameControlReturnData gc_return_data;
+    RoboCupGameControlReturnData gc_return_data;
     static constexpr int BROADCAST_GAME_CONTROL_INTERVAL_MS = 1000;
 
     const char* MULTICAST_ADDR = "239.255.255.250"; // 组播地址

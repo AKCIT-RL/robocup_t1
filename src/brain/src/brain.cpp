@@ -1332,33 +1332,38 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
     };
     string gameState = gameStateMap[static_cast<int>(msg.state)];
     tree->setEntry<string>("gc_game_state", gameState);
-    bool isKickOffSide = (msg.kick_off_team == config->teamId); // 我方是否是开球方 somos o time inicial?
+    bool isKickOffSide = (static_cast<int>(msg.kicking_team) == config->teamId); // 我方是否是开球方 somos o time inicial?
     tree->setEntry<bool>("gc_is_kickoff_side", isKickOffSide);
 
     // 处理比赛的二级状态       estado secundario de jogo //checkpoint
+    // GC2026: o campo set_play substitui o antigo estado secundário.
+    // TIMEOUT não é mais um valor de set_play (que é numerado para tipos de
+    // free kick); agora vem em separado via game_phase, então precisa ser
+    // checado antes do switch abaixo, senão a pausa de partida nunca é detectada
+    // e game.xml's "比赛暂停" branch (_while="gc_game_sub_state_type=='TIMEOUT'") nunca dispara.
     string gameSubStateType;
-    switch (static_cast<int>(msg.secondary_state)) {
-        case 0:
+    if (static_cast<int>(msg.game_phase) == GAME_PHASE_TIMEOUT) {
+        gameSubStateType = "TIMEOUT"; // 包含两队 timeout 和 裁判 timeout
+        data->realGameSubState = "TIMEOUT";
+    } else
+    switch (static_cast<int>(msg.set_play)) {
+        case SET_PLAY_NONE:
             gameSubStateType = "NONE";
             data->realGameSubState = "NONE";
             break;
-        case 3:
-            gameSubStateType = "TIMEOUT"; // 包含两队 timeout 和 裁判 timeout
-            data->realGameSubState = "TIMEOUT";
-            break;
-        // 暂时不处理其它状态, 除 TIMEOUT 外, 都按 FREE_KICK 处理   tudo pra baixo considera como free kick
-        case 4:
+        // 暂时不处理其它状态, 除 TIMEOUT 外, 都按 FREE_KICK 处理   tudo abaixo considera como free kick
+        case SET_PLAY_DIRECT_FREE_KICK:
             // gameSubStateType = "DIRECT_FREEKICK";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "DIRECT_FREEKICK";
             data->isDirectShoot = true;
             break;
-        case 5:
+        case SET_PLAY_INDIRECT_FREE_KICK:
             // gameSubStateType = "INDIRECT_FREEKICK";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "INDIRECT_FREEKICK";
             break;
-        case 6:
+        case SET_PLAY_PENALTY_KICK:
             // gameSubStateType = "PENALTY_KICK";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "PENALTY_KICK";
@@ -1367,18 +1372,18 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
             data->ballPosDuringPenalty = Point2D{data->ball.posToField.x,
                                                  data->ball.posToField.y};
             break;
-        case 7:
+        case SET_PLAY_CORNER_KICK:
             // gameSubStateType = "CORNER_KICK";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "CORNER_KICK";
             break;
-        case 8:
+        case SET_PLAY_GOAL_KICK:
             // gameSubStateType = "GOAL_KICK";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "GOAL_KICK";
             data->isDirectShoot = true;
             break;
-        case 9:
+        case SET_PLAY_THROW_IN:
             // gameSubStateType = "THROW_IN";
             gameSubStateType = "FREE_KICK";
             data->realGameSubState = "THROW_IN";
@@ -1387,11 +1392,16 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
             gameSubStateType = "FREE_KICK";
             break;
     }
-    vector<string> gameSubStateMap = {"STOP", "GET_READY", "SET"};                               // STOP: 停下来; -> GET_READY: 移动到进攻或防守位置; -> SET: 站住不动
-    string gameSubState = gameSubStateMap[static_cast<int>(msg.secondary_state_info[1])];
+    // STOP: 停下来; -> GET_READY: 移动到进攻或防守位置.
+    // GC2026 (GC v19) não fornece mais uma fase "SET" explícita no sub-estado;
+    // derivamos o sub-estado de msg.stopped apenas para FREE_KICK.
+    string gameSubState = "NONE";
+    if (gameSubStateType == "FREE_KICK") {
+        gameSubState = (msg.stopped != 0) ? "STOP" : "GET_READY";
+    }
     tree->setEntry<string>("gc_game_sub_state_type", gameSubStateType);
     tree->setEntry<string>("gc_game_sub_state", gameSubState);
-    bool isSubStateKickOffSide = (static_cast<int>(msg.secondary_state_info[0]) == config->teamId); // 在二级状态下, 我方是否是开球方. 例如, 当前二级状态为任意球, 我方是否是开任意球的一方
+    bool isSubStateKickOffSide = (gameSubStateType == "FREE_KICK") && (static_cast<int>(msg.kicking_team) == config->teamId); // 在二级状态下, 我方是否是开球方. 例如, 当前二级状态为任意球, 我方是否是开任意球的一方
     tree->setEntry<bool>("gc_is_sub_state_kickoff_side", isSubStateKickOffSide);
 
     // cout << "game state: " << gameState << " game sub state type: " << gameSubStateType << endl;
@@ -1421,15 +1431,16 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
     // 处理判罚状态. penalty[playerId - 1] 代表我方的球员是否处于判罚状态, 处理判罚状态意味着不能移动
     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
         data->penalty[i] = static_cast<int>(myTeamInfo.players[i].penalty);
-        
-        if (static_cast<int>(myTeamInfo.players[i].red_card_count) > 0) {
+
+        // GC2026: RobotInfo não tem mais contagem de cartão vermelho; promovemos SENT_OFF para SUBSTITUTE.
+        if (data->penalty[i] == PENALTY_SENT_OFF) {
             data->penalty[i] = PENALTY_SUBSTITUTE;
         }
 
         if (data->penalty[i] == PENALTY_NONE) liveCount++;
         data->oppoPenalty[i] = static_cast<int>(oppoTeamInfo.players[i].penalty);
 
-        if (static_cast<int>(oppoTeamInfo.players[i].red_card_count) > 0) {
+        if (data->oppoPenalty[i] == PENALTY_SENT_OFF) {
             data->oppoPenalty[i] = PENALTY_SUBSTITUTE;
         }
 
