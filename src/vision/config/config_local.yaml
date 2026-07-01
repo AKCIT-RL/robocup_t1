@@ -16,7 +16,7 @@ camera:
   yaw_compensation: 0
   z_compensation: 0
 detection_model:
-  model_path: ./src/vision/model/best_30.engine
+  model_path: ./src/vision/model/best_40.engine
   confidence_threshold: 0.15
   nms_threshold: 0.4
   classnames: [Ball, Goalpost, Person, LCross, TCross, XCross, PenaltyPoint, Opponent, BRMarker]
