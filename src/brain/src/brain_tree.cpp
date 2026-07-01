@@ -1249,6 +1249,41 @@ tuple<double, double, double> Kick::_calcSpeed() {
   return make_tuple(vx, vy, msecKick);
 }
 
+double Kick::_calcKickinhoVel(double &vx, double &vy) {
+  // Limites de velocidade (mantidos idênticos ao comportamento original de onStart).
+  double vxLimit = 1.2, vyLimit = 0.6;
+  if (brain->data->kickType == "conduzir") {
+    vxLimit = 1.2;
+    auto goalPostAngles = brain->getGoalPostAngles(brain->config->goalPostMargin);
+    double theta_l = goalPostAngles[0];
+    double theta_r = goalPostAngles[1];
+    if (fabs(theta_l - theta_r) < brain->config->avoidAngleDegrees * M_PI / 180.0) {
+      vxLimit = 1.2;
+    }
+  }
+
+  double vxFactor = brain->config->vxFactor;
+  double yawOffset = brain->config->yawOffset;
+
+  double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
+  double tx = cos(adjustedYaw) * brain->data->ball.range;
+  double ty = sin(adjustedYaw) * brain->data->ball.range;
+
+  if (fabs(ty) < 0.01 && fabs(adjustedYaw) < 0.01) {
+    vx = vxLimit;
+    vy = 0.0;
+  } else {
+    vy = ty > 0 ? vyLimit : -vyLimit;
+    vx = vy / ty * tx * vxFactor;
+    if (fabs(vx) > vxLimit) {
+      vy *= vxLimit / vx;
+      vx = vxLimit;
+    }
+  }
+
+  return norm(vx, vy);
+}
+
 NodeStatus Kick::onStart() {
 
   if (brain->data->kickType == "drible")
@@ -1300,60 +1335,29 @@ NodeStatus Kick::onStart() {
   //---- Kick Set Velocity
   if(brain->data->kickType == "kickinho" || brain->data->kickType == "shoot" || brain->data->kickType == "conduzir"){
     _startTime = brain->get_clock()->now();
-    double vxLimit = 1.2, vyLimit = 0.6;
-    if(brain->data->kickType == "conduzir")
-    {
-      vxLimit = 1.2;
-      auto goalPostAngles = brain->getGoalPostAngles(brain->config->goalPostMargin);
-      double theta_l = goalPostAngles[0]; 
-      double theta_r = goalPostAngles[1]; 
-      if(fabs(theta_l - theta_r) < brain->config->avoidAngleDegrees * M_PI / 180.0)
-      {
-        vxLimit = 1.2;
-      }
-    }
 
-    // getInput("vx_limit", vxLimit);
-    // getInput("vy_limit", vyLimit);
     int minMSecKick = 1000;
-    // getInput("min_msec_kick", minMSecKick);
-    double vxFactor = brain->config->vxFactor;
-    double yawOffset = brain->config->yawOffset;
-
-    double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
-    double tx = cos(adjustedYaw) * brain->data->ball.range;
-    double ty = sin(adjustedYaw) * brain->data->ball.range;
 
     double vx, vy;
+    double speed = _calcKickinhoVel(vx, vy);
 
-    if (fabs(ty) < 0.01 && fabs(adjustedYaw) < 0.01)
-    {
-        vx = vxLimit;
-        vy = 0.0;
-    }
-    else
-    {
-        vy = ty > 0 ? vyLimit : -vyLimit;
-        vx = vy / ty * tx * vxFactor;
-        if (fabs(vx) > vxLimit)
-        {
-            vy *= vxLimit / vx;
-            vx = vxLimit;
-        }
-    }
-
-    double speed = norm(vx, vy);
-
+    // Duração total do "chute" (empurrão): tempo mínimo + tempo estimado para
+    // percorrer a distância até a bola na velocidade calculada. Calculado uma
+    // única vez em onStart (define quando o pulso de empurrão termina).
     _msecKick = speed > 1e-5 ? minMSecKick + static_cast<int>(brain->data->ball.range / speed * 1000) : minMSecKick;
 
+    // Envia o primeiro comando de velocidade. A partir daqui, onRunning
+    // reenvia esse comando a cada tick (o controlador de marcha do robô exige
+    // renovação periódica da velocidade, senão o robô fica parado).
     brain->client->setVelocity(vx, vy, 0, false, false, false);
     brain->log->setTimeNow();
     brain->log->log("striker/KickinhoVel",
-                    rerun::TextLog(format("VX: %.3f, VY: %.3f", vx, vy)));
+                    rerun::TextLog(format("[onStart] type: %s VX: %.3f, VY: %.3f speed: %.3f msecKick: %d",
+                                          brain->data->kickType.c_str(), vx, vy, speed, _msecKick)));
     //---- Kick Set Velocity
   }else{
     _msecKick = 3000;
-    _startTime = brain->get_clock()->now() - rclcpp::Duration(100, 0); 
+    _startTime = brain->get_clock()->now() - rclcpp::Duration(100, 0);
   }
 
   return NodeStatus::RUNNING;
@@ -1425,6 +1429,15 @@ NodeStatus Kick::onRunning() {
   auto ballRange = brain->data->ball.range;
   const double MOVE_RANGE_THRESHOLD = 0.3;
   const double BALL_LOST_THRESHOLD = 1000;
+
+  // Log de estado do Kick a cada tick (não-drible): permite ver no robô se o
+  // nó está sendo ticado, qual o kickType e quanto tempo falta para o
+  // empurrão/skill de chute disparar.
+  log(format("tick type: %s ballDetected: %d ballRange: %.2f minRange: %.2f "
+             "elapsed_ms: %.0f/%d",
+             brain->data->kickType.c_str(), brain->data->ballDetected,
+             ballRange, _minRange, brain->msecsSince(_startTime), _msecKick));
+
   if (enableAbort &&
       ((brain->data->ballDetected &&
         ballRange - _minRange > MOVE_RANGE_THRESHOLD) ||
@@ -1457,8 +1470,33 @@ NodeStatus Kick::onRunning() {
   //   return NodeStatus::SUCCESS;
   // }
 
+  // O "kickinho"/"shoot"/"conduzir" NÃO chamam nenhuma skill de chute do
+  // firmware: o "chute" é inteiramente o deslocamento do corpo empurrando a
+  // bola. O comando de velocidade precisa ser reenviado a cada tick (o
+  // controlador de marcha exige renovação periódica; um único comando enviado
+  // em onStart não produz deslocamento contínuo -> robô fica parado na frente
+  // da bola). Recalcula vx/vy a partir da posição ATUAL da bola, seguindo o
+  // mesmo padrão do branch "drible" (que reenvia crabWalk a cada tick).
+  if (brain->data->kickType == "kickinho" ||
+      brain->data->kickType == "shoot" ||
+      brain->data->kickType == "conduzir") {
+    if (brain->msecsSince(_startTime) <= _msecKick) {
+      double vx, vy;
+      double speed = _calcKickinhoVel(vx, vy);
+      brain->client->setVelocity(vx, vy, 0, false, false, false);
+      brain->log->setTimeNow();
+      brain->log->log(
+          "striker/KickinhoVel",
+          rerun::TextLog(format(
+              "[onRunning] type: %s VX: %.3f VY: %.3f speed: %.3f "
+              "remaining_ms: %.0f ballRange: %.2f",
+              brain->data->kickType.c_str(), vx, vy, speed,
+              _msecKick - brain->msecsSince(_startTime),
+              brain->data->ball.range)));
+    }
+  }
 
-  if (brain->msecsSince(_startTime) > _msecKick) 
+  if (brain->msecsSince(_startTime) > _msecKick)
   {
     brain->client->setVelocity(0, 0, 0);
     if(brain->data->ballDetected && brain->data->kickType == "kick"){

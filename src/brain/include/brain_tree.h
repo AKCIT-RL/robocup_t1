@@ -343,9 +343,12 @@ private:
     rclcpp::Time _startTime; 
     string _state = "kick"; // stablize | kick
     int _msecKick = 1000;    
-    double _speed; 
-    double _minRange; 
+    double _speed;
+    double _minRange;
     tuple<double, double, double> _calcSpeed();
+    // Recalcula (a cada tick) a velocidade linear vx/vy do "kickinho"/"shoot"/"conduzir"
+    // a partir da posição atual da bola. Retorna a velocidade escalar (norm(vx, vy)).
+    double _calcKickinhoVel(double &vx, double &vy);
 };
 
 
