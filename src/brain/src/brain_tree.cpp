@@ -110,6 +110,7 @@ void BrainTree::initEntry() {
 
   setEntry<bool>("we_just_scored", false);
   setEntry<bool>("wait_for_opponent_kickoff", false);
+  setEntry<bool>("need_active_loc", false);
 
   // 自动视觉校准相关
   setEntry<string>("calibrate_state", "pitch");
@@ -676,6 +677,8 @@ NodeStatus Assist::tick() {
   log(format("has2Assists: %d, isSecondary: %d", has2Assists, isSecondary));
 
   Pose2D targetPose;
+
+  // Alinhamento com a bola e o centro do próprio gol
   targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
   targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
   targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) /
@@ -684,6 +687,68 @@ NodeStatus Assist::tick() {
     targetPose.y += isSecondary ? -0.5 : 0.5;
   }
 
+  /*
+  
+  // Logica de divisão do campo em 4 zonas ao longo do eixo X
+  // Zona 1 (defesa proxima ao go): -fd.length/2 até -fd.length/4   → segundo goleiro
+  // Zona 2 (defesa média):    -fd.length/4 até 0                   → 2m atrás da bola, Y alinhado ao gol
+  // Zona 3 (ataque perto):     0 até fd.length/4                   → início da grande área, lado oposto da bola
+  // Zona 4 (ataque proximo ao gol):  fd.length/4 até fd.length/2   → trave mais distante da bola
+  double zoneBoundary1 = -fd.length / 4.0;  // limite entre zona 1 e 2
+  double zoneBoundary2 = 0.0;               // limite entre zona 2 e 3
+  double zoneBoundary3 = fd.length / 4.0;   // limite entre zona 3 e 4
+
+  if (!isSecondary) {
+    // Assistente primário
+    if (ballPos.x > zoneBoundary3) {
+
+      // ZONA 4
+      log("assist zone 4");
+      targetPose.x = fd.length / 2.0 - fd.penaltyAreaLength;
+      targetPose.y = ballPos.y > 0 ? -fd.goalWidth / 2.0 : fd.goalWidth / 2.0;
+    }
+    else if (ballPos.x > zoneBoundary2) {
+      // ZONA 3
+      log("assist zone 3");
+      targetPose.x = fd.length / 2.0 - fd.penaltyAreaLength;
+      targetPose.y = ballPos.y > 0 ? -fd.penaltyAreaWidth / 3.0 : fd.penaltyAreaWidth / 3.0;
+    }
+    else if (ballPos.x > zoneBoundary1) {
+      // ZONA 2
+      log("assist zone 2");
+      targetPose.x = ballPos.x - 2.0;
+      targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
+      targetPose.y = 0.0;
+    }
+    else {
+      // ZONA 1
+      log("assist zone 1");
+      targetPose.x = -fd.length / 2.0 + distToGoalline;
+
+      // Posiciona no lado oposto da bola dentro do gol
+      targetPose.y = ballPos.y > 0 ? -fd.goalWidth / 4.0 : fd.goalWidth / 4.0;
+    }
+  } else {
+    // Assistente secundário
+    targetPose.x = ballPos.x - 4.0;
+    targetPose.x = max(targetPose.x, -fd.length / 2.0 + distToGoalline);
+    targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) /
+                   (ballPos.x + fd.length / 2.0);
+    if (has2Assists) {
+      targetPose.y += isSecondary ? -0.5 : 0.5;
+    }
+  }
+  */
+
+  // Suavização com filtro exponencial
+  static double smoothedX = targetPose.x;
+  static double smoothedY = targetPose.y;
+  double alpha = 0.08; // fator de suavização
+  smoothedX += alpha * (targetPose.x - smoothedX);
+  smoothedY += alpha * (targetPose.y - smoothedY);
+  targetPose.x = smoothedX;
+  targetPose.y = smoothedY;
+
   double dist = norm(targetPose.x - robotPose.x, targetPose.y - robotPose.y);
   if (dist < distTolerance &&
       fabs(brain->data->ball.yawToRobot) < thetaTolerance) {
@@ -691,6 +756,7 @@ NodeStatus Assist::tick() {
     return NodeStatus::SUCCESS;
   }
 
+  /*
   double vxLimit, vyLimit;
   getInput("vx_limit", vxLimit);
   getInput("vy_limit", vyLimit);
@@ -701,6 +767,38 @@ NodeStatus Assist::tick() {
   brain->client->navigateToPoint(targetPose.x, targetPose.y,
                                  vxLimit, vyLimit,
                                  distTolerance, avoidObstacle);
+  */
+
+  double vx, vy, vtheta;
+  auto targetPose_r = brain->data->field2robot(targetPose);
+  double targetDir = atan2(targetPose_r.y, targetPose_r.x);
+  double distToObstacle = brain->distToObstacle(targetDir);
+
+  bool avoidObstacle;
+  brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
+  double oaSafeDist;
+  brain->get_parameter("obstacle_avoidance.chase_ao_safe_dist", oaSafeDist);
+
+  if (avoidObstacle && distToObstacle < oaSafeDist) {
+    log("avoid obstacle");
+    auto avoidDir = brain->calcAvoidDir(targetDir, oaSafeDist);
+    const double speed = 0.5;
+    vx = speed * cos(avoidDir);
+    vy = speed * sin(avoidDir);
+    vtheta = brain->data->ball.yawToRobot;
+  } else {
+    vx = targetPose_r.x;
+    vy = targetPose_r.y;
+    vtheta = brain->data->ball.yawToRobot * 4.0;
+  }
+
+  double vxLimit, vyLimit;
+  getInput("vx_limit", vxLimit);
+  getInput("vy_limit", vyLimit);
+  vx = cap(vx, vxLimit, -1.0);
+  vy = cap(vy, vyLimit, -vyLimit);
+
+  brain->client->setVelocity(vx, vy, vtheta, false, false, false);
   return NodeStatus::SUCCESS;
 }
 
@@ -1054,6 +1152,19 @@ NodeStatus StrikerDecide::tick() {
     brain->log->setTimeNow();
     brain->log->log("debug/striker_decide", rerun::TextLog(msg));
   };
+
+  // Após timeout sem localizar, escaneia por scanDuration ms e depois volta a rastrear a bola, e repete o ciclo periodicamente.
+  double activeLocTimeout = brain->get_parameter("strategy.active_loc_timeout_msecs").get_value<double>();
+  double activeLocScanDuration = brain->get_parameter("strategy.active_loc_scan_duration_msecs").get_value<double>();
+  double timeSinceLastLoc = brain->msecsSince(brain->data->lastSuccessfulLocalizeTime);
+  bool needActiveLoc = false;
+  if (timeSinceLastLoc > activeLocTimeout) {
+
+    double cycle = activeLocTimeout + activeLocScanDuration;
+    double phase = fmod(timeSinceLastLoc - activeLocTimeout, cycle);
+    needActiveLoc = (phase < activeLocScanDuration);
+  }
+  brain->tree->setEntry<bool>("need_active_loc", needActiveLoc);
 
   double chaseRangeThreshold;
   getInput("chase_threshold", chaseRangeThreshold);
@@ -1768,7 +1879,7 @@ NodeStatus GoToReadyPosition::tick() {
   brain->client->moveToPoseOnField2(
       tx, ty, ttheta, longRangeThreshold, turnThreshold, vxLimit, vyLimit,
       vthetaLimit, distTolerance / 1.5, distTolerance / 1.5, thetaTolerance,
-      avoidObstacle);
+      false);
   return NodeStatus::SUCCESS;
 }
 

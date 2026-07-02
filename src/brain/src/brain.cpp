@@ -48,6 +48,8 @@ Brain::Brain() : rclcpp::Node("brain_node")
     declare_parameter<double>("strategy.near_ball_range", 4.0);
     declare_parameter<bool>("strategy.abort_kick_when_ball_moved", false);
     declare_parameter<double>("strategy.lead_switch_threshold", 1.0);
+    declare_parameter<double>("strategy.active_loc_timeout_msecs", 10000.0);
+    declare_parameter<double>("strategy.active_loc_scan_duration_msecs", 2000.0);
     declare_parameter<bool>("strategy.enable_bypass", false);
     declare_parameter<bool>("strategy.enable_shoot", false);
     declare_parameter<bool>("strategy.enable_directional_kick", false);

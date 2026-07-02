@@ -72,6 +72,9 @@ field_marker_pose_estimator:
   refine: false
   line_segment_area_threshold: 75
 calibration:
+  board_w: 11
+  board_h: 8
+  board_square_size: 0.05
   offset:
     exclude_distance: 2.0
     zero_translation: true

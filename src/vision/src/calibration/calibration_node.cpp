@@ -55,8 +55,8 @@ private:
     bool is_offline_ = false;
     bool new_log_path_ = true;
 
-    int board_w_ = 0;
-    int board_h_ = 0;
+    int board_w_ = 10;
+    int board_h_ = 7;
     float board_square_size_ = 0.05;
     std::string calibration_mode_ = "handeye";
     std::string camera_type_ = "";
@@ -185,6 +185,25 @@ void CalibrationNode::Init(const std::string cfg_path, bool is_offline, std::str
     this->get_parameter("board_w", board_w_);
     this->get_parameter("board_h", board_h_);
     this->get_parameter("board_square_size", board_square_size_);
+
+    if (cfg_node_["calibration"]) {
+        if (cfg_node_["calibration"]["board_w"]) {
+            board_w_ = cfg_node_["calibration"]["board_w"].as<int>();
+        }
+        if (cfg_node_["calibration"]["board_h"]) {
+            board_h_ = cfg_node_["calibration"]["board_h"].as<int>();
+        }
+        if (cfg_node_["calibration"]["board_square_size"]) {
+            board_square_size_ = cfg_node_["calibration"]["board_square_size"].as<float>();
+        }
+    }
+
+    std::cout << "========================================" << std::endl;
+    std::cout << "Calibration board parameters loaded:" << std::endl;
+    std::cout << "  board_w (inner corners width): " << board_w_ << std::endl;
+    std::cout << "  board_h (inner corners height): " << board_h_ << std::endl;
+    std::cout << "  board_square_size: " << board_square_size_ << " meters" << std::endl;
+    std::cout << "========================================" << std::endl;
 
     board_detector_ = std::make_shared<BoardDetector>(cv::Size(board_w_, board_h_), board_square_size_, intr_);
 

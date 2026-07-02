@@ -118,6 +118,29 @@ void LocalizationFusion::createFieldImage() {
         cv::circle(field_image_, pt, 5, mapMarkerColor, -1);
         cv::putText(field_image_, mm.type, pt + cv::Point2f(6, -6), cv::FONT_HERSHEY_SIMPLEX, 0.4, mapMarkerColor, 1);
     }
+
+    // Draw Assist Zone
+    // Zones: X = -L/4, 0 (already drawn as center line), +L/4
+    cv::Scalar zoneLineColor(150, 150, 150); // gray
+    auto drawDashedLine = [&](cv::Point2f from, cv::Point2f to, int dashLen = 8, int gapLen = 6) {
+        double dx = to.x - from.x;
+        double dy = to.y - from.y;
+        double totalLen = sqrt(dx * dx + dy * dy);
+        double ux = dx / totalLen;
+        double uy = dy / totalLen;
+        double drawn = 0;
+        while (drawn < totalLen) {
+            double segEnd = std::min(drawn + dashLen, totalLen);
+            cv::Point2f p1(from.x + ux * drawn, from.y + uy * drawn);
+            cv::Point2f p2(from.x + ux * segEnd, from.y + uy * segEnd);
+            cv::line(field_image_, p1, p2, zoneLineColor, 1);
+            drawn = segEnd + gapLen;
+        }
+    };
+    // X = -L/4
+    drawDashedLine(fieldToImg(-halfLen / 2.0, halfWid), fieldToImg(-halfLen / 2.0, -halfWid));
+    // X = +L/4
+    drawDashedLine(fieldToImg(halfLen / 2.0, halfWid), fieldToImg(halfLen / 2.0, -halfWid));
 }
 
 void LocalizationFusion::drawRobot(cv::Mat& img) {
