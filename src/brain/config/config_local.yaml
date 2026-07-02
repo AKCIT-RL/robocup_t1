@@ -9,7 +9,7 @@ brain_node:
       number_of_players: 3
       
     robot:
-      robot_height: 1.0 
+      robot_height: 1.12 
       odom_factor: 1.2 
       vx_factor: 0.50 
       yaw_offset: 0.0 
