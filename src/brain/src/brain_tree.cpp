@@ -96,6 +96,8 @@ void BrainTree::initEntry() {
   setEntry<bool>("gc_is_kickoff_side", false);
   setEntry<bool>("gc_is_sub_state_kickoff_side", false);
   setEntry<bool>("gc_is_under_penalty", false);
+  setEntry<bool>("gc_is_stopped", false);
+  setEntry<bool>("freekick_positioned", false);
 
   setEntry<bool>("need_check_behind", false);
 
@@ -514,6 +516,9 @@ NodeStatus GoToFreekickPosition::onRunning() {
 
   if (dist < 0.2 && fabs(deltaDir) < 0.1) {
     brain->client->setVelocity(0, 0, 0);
+    if (side == "attack") {
+      brain->tree->setEntry<bool>("freekick_positioned", true);
+    }
     return NodeStatus::SUCCESS;
   }
 

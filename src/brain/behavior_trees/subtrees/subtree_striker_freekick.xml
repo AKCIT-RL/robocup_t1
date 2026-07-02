@@ -4,11 +4,28 @@
    <include path="./subtree_locate.xml" />
    <BehaviorTree ID="StrikerFreekick">
       <ReactiveSequence>
-         <ReactiveSequence _while="gc_is_sub_state_kickoff_side" name="移动到开点球位置"> <!--mover para a posicao de inicio do jogo-->
+         <ReactiveSequence _while="gc_is_sub_state_kickoff_side && !freekick_positioned" name="移动到开点球位置"> <!--mover para a posicao de inicio do jogo-->
             <CamTrackBall _while="ball_location_known" />
             <CalcKickDir />
             <SubTree ID="FindBall" _while="!(ball_location_known || tm_ball_pos_reliable)" _autoremap="true" />
             <GoToFreekickPosition _while="ball_location_known || tm_ball_pos_reliable" side="attack" vx_limit="0.7" vy_limit="0.4" />
+         </ReactiveSequence>
+         <ReactiveSequence _while="gc_is_sub_state_kickoff_side && freekick_positioned" name="cobrar o tiro livre"> <!--ja posicionado: executar a cobranca (chase/adjust/kick, igual ao StrikerPlay)-->
+            <Fallback>
+               <CamScanField _while="need_active_loc" low_pitch="0.8" high_pitch="0.3" left_yaw="1.0" right_yaw="-1.0" msec_cycle="2000" />
+               <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
+            </Fallback>
+            <CalcKickDir />
+            <Sequence>
+               <ReactiveSequence>
+                  <StrikerDecide decision_out="{decision}" decision_in="{decision}" chase_threshold="1.5" />
+                  <SubTree ID="FindBall" _while="decision=='find'" _autoremap="true" />
+               </ReactiveSequence>
+               <Assist _while="decision == 'assist'" vx_limit="1.0" vy_limit="0.5" dist_tolerance="0.25" />
+               <Chase vx_limit="1.2" vy_limit="0.6" vtheta_limit="1.2" dist="0.5" safe_dist="0.5" _while="decision == 'chase'" />
+               <Adjust turn_threshold="0.5" range="0.5" vx_limit="0.5" vy_limit="0.6" vtheta_limit="1.5" vtheta_factor="4.5" tangential_speed_far="0.9" tangential_speed_near="0.4" _while="decision =='adjust'" />
+               <Kick speed_limit="0.8" min_msec_kick="1000" msecs_stablize="1000" _while="decision == 'kick'" />
+            </Sequence>
          </ReactiveSequence>
          <ReactiveSequence _while="!gc_is_sub_state_kickoff_side" name="移动到防守点球位置"> <!--mover para a posicao de penalidade; lado defensor-->
             <CamTrackBall _while="ball_location_known" />

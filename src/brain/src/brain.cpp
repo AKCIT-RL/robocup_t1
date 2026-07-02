@@ -1403,8 +1403,17 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
     }
     tree->setEntry<string>("gc_game_sub_state_type", gameSubStateType);
     tree->setEntry<string>("gc_game_sub_state", gameSubState);
+    // msg.stopped é ortogonal ao game_phase/set_play (vale em qualquer state, cf.
+    // README do GameController, seção "Stop Play"): expõe independente do
+    // sub-estado, para que o robô possa parar mesmo fora de um free kick.
+    tree->setEntry<bool>("gc_is_stopped", msg.stopped != 0);
     bool isSubStateKickOffSide = (gameSubStateType == "FREE_KICK") && (static_cast<int>(msg.kicking_team) == config->teamId); // 在二级状态下, 我方是否是开球方. 例如, 当前二级状态为任意球, 我方是否是开任意球的一方
     tree->setEntry<bool>("gc_is_sub_state_kickoff_side", isSubStateKickOffSide);
+    if (gameSubStateType != "FREE_KICK") {
+        // reseta para a próxima cobrança; GoToFreekickPosition marca como true
+        // ao concluir o posicionamento (side="attack").
+        tree->setEntry<bool>("freekick_positioned", false);
+    }
 
     // cout << "game state: " << gameState << " game sub state type: " << gameSubStateType << endl;
     // 找到队的信息
