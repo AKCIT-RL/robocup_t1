@@ -1,9 +1,9 @@
 brain_node:
   ros__parameters:
     game:
-      team_id: 29 # must be consistant with GameControl
-      player_id: 2 # 1 | 2 | 3 | 4 | 5
-      field_type: "custom_size" # adult_size | kid_size | robo_league | custom_size | campus_pa
+      team_id: 59 # must be consistant with GameControl
+      player_id: 1 # 1 | 2 | 3 | 4 | 5
+      field_type: "adult_size" # adult_size | kid_size | robo_league | custom_size | campus_pa
       player_role: "striker" # striker | goal_keeper
       treat_person_as_robot: true 
       number_of_players: 3
