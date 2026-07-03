@@ -739,7 +739,7 @@ void Brain::updateKickoffMemory() {
         return posChange > threshold;
     };
     static rclcpp::Time kickOffTime;
-    const double TIMEOUT = 1000 * 10; 
+    const double TIMEOUT = 1000 * 2; 
     auto timeReached = [=]() {
         return msecsSince(kickOffTime) > TIMEOUT;
     };
