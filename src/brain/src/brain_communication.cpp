@@ -21,7 +21,7 @@ void BrainCommunication::initCommunication()
     if (brain->config->enableCom)
     {
         cout << RED_CODE << "Communication enabled." << RESET_CODE << endl;
-        _discovery_udp_port = 20000 + brain->config->teamId;
+        _discovery_udp_port = 10000 + brain->config->teamId;
         _unicast_udp_port = 30000 + brain->config->teamId;
 
         initDiscoveryBroadcast();
