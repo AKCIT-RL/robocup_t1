@@ -44,8 +44,12 @@
                             decision_in="{decision}"
                             chase_threshold="3.0"/>
               <GoToGoalBlockingPosition theta_tolerance="0.6"
+                                        vx_limit="1.2"
+                                        vy_limit="0.6"
                                         _while="decision==&apos;find&apos;"/>
               <GoToGoalBlockingPosition theta_tolerance="0.6"
+                                        vx_limit="1.2"
+                                        vy_limit="0.6"
                                         _while="decision == &apos;retreat&apos;"/>
               <Chase vx_limit="0.8"
                      vy_limit="0.3"

@@ -461,8 +461,8 @@ public:
         return {
             InputPort<double>("dist_tolerance", 0.8, "dist tolerance, within which considered arrived."),   //tolerancia x em frente ao gol
             InputPort<double>("theta_tolerance", 0.8, "theta tolerance, winin which considered arrived."),  //tolerancia theta em frente ao gol
-            InputPort<double>("vx_limit", 0.1, "x speed limit"),                                            //max vx
-            InputPort<double>("vy_limit", 0.1, "y speed limit"),                                            //max vy
+            InputPort<double>("vx_limit", 1.2, "x speed limit"),                                            //max vx
+            InputPort<double>("vy_limit", 0.6, "y speed limit"),                                            //max vy
             InputPort<double>("dist_to_goalline", 2.5, "机器人站在门前多少距离"),   //distancia em x da linha do proprio gol, serve como limite para o robo nao ir muito pra tras
         };
     }
