@@ -4,7 +4,7 @@
    <include path="./subtree_locate.xml" />
    <BehaviorTree ID="StrikerFreekick">
       <ReactiveSequence>
-         <ReactiveSequence _while="gc_is_sub_state_kickoff_side && !freekick_positioned" name="移动到开点球位置"> <!--mover para a posicao de inicio do jogo-->
+         <ReactiveSequence _while="gc_is_sub_state_kickoff_side && (!freekick_positioned)" name="移动到开点球位置"> <!--mover para a posicao de inicio do jogo-->
             <CamTrackBall _while="ball_location_known" />
             <CalcKickDir />
             <SubTree ID="FindBall" _while="!(ball_location_known || tm_ball_pos_reliable)" _autoremap="true" />

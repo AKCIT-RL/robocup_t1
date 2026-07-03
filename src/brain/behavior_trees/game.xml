@@ -49,7 +49,7 @@
                         <SetVelocity />
                     </ReactiveSequence>
 
-                    <ReactiveSequence _while="!gc_is_stopped && gc_game_sub_state_type=='TIMEOUT'" name="比赛暂停. 暂停时, game state 必为 INITIAL">
+                    <ReactiveSequence _while="(!gc_is_stopped) && gc_game_sub_state_type=='TIMEOUT'" name="比赛暂停. 暂停时, game state 必为 INITIAL">
                         <!--jogo pausado. estado agora esta em INITIAL-->
                         <SetVelocity />
                         <CamScanField _while="!odom_calibrated"/>
@@ -57,7 +57,7 @@
                         <SelfLocateEnterField />
                     </ReactiveSequence>
 
-                    <ReactiveSequence _while="!gc_is_stopped && gc_game_sub_state_type=='NONE'" name="正常比赛"> <!--jogo normal-->
+                    <ReactiveSequence _while="(!gc_is_stopped) && gc_game_sub_state_type=='NONE'" name="正常比赛"> <!--jogo normal-->
                         <ReactiveSequence _while="gc_game_state=='INITIAL'" name="在场外入场位置站好"> <!--espere do lado de fora do campo-->
                             <CamScanField _while="!odom_calibrated"/>
                             <SubTree ID="CamFindAndTrackBall" _autoremap="true" _while="odom_calibrated" />
@@ -87,7 +87,7 @@
 
                     </ReactiveSequence>
 
-                    <ReactiveSequence _while="!gc_is_stopped && gc_game_sub_state_type=='FREE_KICK' && gc_game_state=='PLAY'" name="开任意球"> <!--cobranca de free kick-->
+                    <ReactiveSequence _while="(!gc_is_stopped) && gc_game_sub_state_type=='FREE_KICK' && gc_game_state=='PLAY'" name="开任意球"> <!--cobranca de free kick-->
                         <ReactiveSequence _while="gc_game_sub_state=='STOP'">
                             <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
                             <SubTree ID="Locate" _autoremap="true" _while="ball_location_known"/>
