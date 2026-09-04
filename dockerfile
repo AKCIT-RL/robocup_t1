@@ -43,6 +43,12 @@ RUN apt-get update && \
     libnvparsers-dev=8.6.1.6-1+cuda12.0 \
     libnvinfer-headers-dev=8.6.1.6-1+cuda12.0 \
     libnvinfer-headers-plugin-dev=8.6.1.6-1+cuda12.0 \
+    #libnvinfer10=10.3.0.26-1+cuda12.5 \
+    #libnvinfer-dev=10.3.0.26-1+cuda12.5 \
+    #libnvinfer-headers-dev=10.3.0.26-1+cuda12.5 \
+    #libnvinfer-plugin10=10.3.0.26-1+cuda12.5 \
+    #libnvinfer-plugin-dev=10.3.0.26-1+cuda12.5 \
+    #libnvinfer-headers-plugin-dev=10.3.0.26-1+cuda12.5 \
     python3-dev \
     libgoogle-glog-dev \
     ros-humble-backward-ros \

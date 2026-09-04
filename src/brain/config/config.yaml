@@ -13,8 +13,8 @@ brain_node:
       odom_factor: 1.2 
       vx_factor: 0.50 
       yaw_offset: 0.0 
-      vx_limit: 1.0 
-      vy_limit: 0.4
+      vx_limit: 1.2 
+      vy_limit: 0.6
       vtheta_limit: 1.2 
 
     strategy:
@@ -73,6 +73,7 @@ brain_node:
     locator:
       min_marker_count: 5
       max_residual: 0.3 
+      confidence_valve: 50.0
 
     enable_com: true 
 

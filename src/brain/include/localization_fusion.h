@@ -20,12 +20,14 @@ public:
 private:
     Brain* brain_;
     cv::Mat field_image_;
-    double pixels_per_meter_ = 100.0;
+    double pixels_per_meter_ = 50.0;
     cv::Point2f center_offset_ = {450, 300}; // Half of 900x600
 
     void createFieldImage();
     void drawRobot(cv::Mat& img);
     void drawBall(cv::Mat& img);
+    void drawMarkings(cv::Mat& img);
+    void drawOpponents(cv::Mat& img);
     
     cv::Point2f fieldToImg(double x, double y);
 

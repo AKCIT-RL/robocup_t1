@@ -13,8 +13,8 @@ brain_node:
       odom_factor: 1.2 
       vx_factor: 0.50 
       yaw_offset: 0.0 
-      vx_limit: 1.0 
-      vy_limit: 0.4
+      vx_limit: 1.2 
+      vy_limit: 0.6
       vtheta_limit: 1.2 
 
     strategy:
@@ -71,8 +71,9 @@ brain_node:
         tolerance: 0.2
 
     locator:
-      min_marker_count: 5
+      min_marker_count: 3
       max_residual: 0.8
+      confidence_valve: 20.0
 
     enable_com: true 
 
@@ -90,8 +91,8 @@ brain_node:
     vision:
         image_topic: "/camera/camera/color/image_raw" 
         depth_image_topic: "/camera/camera/aligned_depth_to_color/image_raw" 
-        cam_pixel_width: 640. 
-        cam_pixel_height: 380. 
+        cam_pixel_width: 1280. 
+        cam_pixel_height: 720. 
         cam_fov_x: 90.0 
         cam_fov_y: 60.0 
     

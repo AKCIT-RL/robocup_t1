@@ -16,10 +16,38 @@ void LocalizationFusion::tick() {
     if (field_image_.empty()) {
         createFieldImage();
     }
-
+    auto data = brain_->data;
     cv::Mat img = field_image_.clone();
+
     drawRobot(img);
     drawBall(img);
+    drawMarkings(img);
+    drawOpponents(img);
+
+    // Robot position
+    cv::String textRobot = cv::format("Robot: (%.2f, %.2f) m", data->robotPoseToField.x, data->robotPoseToField.y);
+    cv::putText(img, textRobot, cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+    
+    // Ball position
+    cv::String textBall;
+    if (data->ball.confidence > 0.1) {
+        textBall = cv::format("Ball: (%.2f, %.2f) m", data->ball.posToField.x, data->ball.posToField.y);
+    } else {
+        textBall = "Ball: Not Visible";
+    }
+    cv::putText(img, textBall, cv::Point(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+
+    // Opponents (Orange)
+    cv::circle(img, cv::Point(15, 60), 6, cv::Scalar(0, 165, 255), -1); // BGR for Orange
+    cv::putText(img, "Opponent", cv::Point(30, 65), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+
+    // True Map Markers (Gray)
+    cv::circle(img, cv::Point(15, 80), 6, cv::Scalar(180, 180, 180), -1);
+    cv::putText(img, "True Map Marker", cv::Point(30, 85), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+
+    // Perceived Markers (Magenta)
+    cv::circle(img, cv::Point(15, 100), 6, cv::Scalar(255, 0, 255), -1);
+    cv::putText(img, "Perceived Marker", cv::Point(30, 105), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
 
     cv::imshow("Localization Fusion", img);
     cv::waitKey(1);
@@ -48,12 +76,8 @@ void LocalizationFusion::createFieldImage() {
     auto fd = brain_->config->fieldDimensions;
     
     // Calculate canvas size
-    int width = (fd.length + 2.0) * pixels_per_meter_; // Add 1m margin each side
-    int height = (fd.width + 2.0) * pixels_per_meter_;
-    
-    // Ensure minimum size
-    width = std::max(width, 900);
-    height = std::max(height, 600);
+    int width = (fd.length + 5.0) * pixels_per_meter_; // Adding margin each side
+    int height = (fd.width + 5.0) * pixels_per_meter_;
     
     center_offset_ = cv::Point2f(width / 2.0, height / 2.0);
     
@@ -87,31 +111,22 @@ void LocalizationFusion::createFieldImage() {
     int radius = fd.circleRadius * pixels_per_meter_;
     cv::circle(field_image_, center, radius, lineColor, thickness);
     
+    // Draw Ground Truth Map Markers
+    cv::Scalar mapMarkerColor(180, 180, 180); // Light Gray
+    for (const auto& mm : brain_->config->mapMarkings) {
+        cv::Point2f pt = fieldToImg(mm.x, mm.y);
+        cv::circle(field_image_, pt, 5, mapMarkerColor, -1);
+        cv::putText(field_image_, mm.type, pt + cv::Point2f(6, -6), cv::FONT_HERSHEY_SIMPLEX, 0.4, mapMarkerColor, 1);
+    }
 }
 
 void LocalizationFusion::drawRobot(cv::Mat& img) {
     auto data = brain_->data;
-    Pose2D pose = data->robotPoseToField;
-    bool isGood = true;
-
-    // Check localization reliability
-    double timeSinceLoc = brain_->msecsSince(data->lastSuccessfulLocalizeTime);
-    if (timeSinceLoc > 2000.0) {
-        isGood = false;
-    }
-
-    if (!isGood) {
-        pose = clampToField(pose);
-    }
-
+    auto pose = data->robotPoseToField;
     cv::Point2f robotPos = fieldToImg(pose.x, pose.y);
 
-    // Logging Robot Position
-    // RCLCPP_INFO(brain_->get_logger(), "Robot Field: (%.2f, %.2f) -> Pixel: (%.0f, %.0f)", 
-    //     pose.x, pose.y, robotPos.x, robotPos.y);
-    
     // Draw Robot Body
-    cv::Scalar robotColor = isGood ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 255, 255); // Blue if good, Yellow if bad
+    cv::Scalar robotColor = cv::Scalar(255, 0, 0); // Blue
     cv::circle(img, robotPos, 10, robotColor, -1); // Filled circle
     
     // Draw Orientation
@@ -128,39 +143,48 @@ void LocalizationFusion::drawBall(cv::Mat& img) {
     auto data = brain_->data;
     
     if (data->ball.confidence > 0.1) {
-        cv::Point2f ballPos = fieldToImg(data->ball.posToField.x, data->ball.posToField.y);
+        // Draw the ball based on robot's position
+        double ballX = data->robotPoseToField.x + data->ball.posToRobot.x * cos(data->robotPoseToField.theta) - data->ball.posToRobot.y * sin(data->robotPoseToField.theta);
+        double ballY = data->robotPoseToField.y + data->ball.posToRobot.x * sin(data->robotPoseToField.theta) + data->ball.posToRobot.y * cos(data->robotPoseToField.theta);
+        cv::Point2f ballPos = fieldToImg(ballX, ballY);
         
-        // Logging Ball Position
-        // RCLCPP_INFO(brain_->get_logger(), "Ball Field: (%.2f, %.2f) -> Pixel: (%.0f, %.0f)", 
-        //     data->ball.posToField.x, data->ball.posToField.y, ballPos.x, ballPos.y);
-
         cv::circle(img, ballPos, 8, cv::Scalar(0, 0, 255), -1); // Red Ball
         cv::putText(img, "Ball", ballPos + cv::Point2f(10, 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
     }
 }
 
-Pose2D LocalizationFusion::clampToField(const Pose2D& pose) {
-    auto fd = brain_->config->fieldDimensions;
-    double x = pose.x;
-    double y = pose.y;
-    double halfLen = fd.length / 2.0;
-    double halfWid = fd.width / 2.0;
+void LocalizationFusion::drawOpponents(cv::Mat& img) {
+    auto data = brain_->data;
     
-    double clampedX = std::max(-halfLen, std::min(halfLen, x));
-    double clampedY = std::max(-halfWid, std::min(halfWid, y));
-    
-    // Project to nearest border
-    double distLeft = fabs(x - (-halfLen));
-    double distRight = fabs(x - halfLen);
-    double distBottom = fabs(y - (-halfWid));
-    double distTop = fabs(y - halfWid);
-    
-    double minDist = std::min({distLeft, distRight, distBottom, distTop});
-    
-    if (minDist == distLeft) clampedX = -halfLen;
-    else if (minDist == distRight) clampedX = halfLen;
-    else if (minDist == distBottom) clampedY = -halfWid;
-    else if (minDist == distTop) clampedY = halfWid;
+    for (const auto& r : data->getRobots()) {
 
-    return {clampedX, clampedY, pose.theta};
+        double rx = data->robotPoseToField.x + r.posToRobot.x * cos(data->robotPoseToField.theta) - r.posToRobot.y * sin(data->robotPoseToField.theta);
+        double ry = data->robotPoseToField.y + r.posToRobot.x * sin(data->robotPoseToField.theta) + r.posToRobot.y * cos(data->robotPoseToField.theta);
+        cv::Point2f pt = fieldToImg(rx, ry);
+        
+        cv::circle(img, pt, 8, cv::Scalar(0, 165, 255), -1); // Orange
+        cv::putText(img, r.label, pt + cv::Point2f(10, -10), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 165, 255), 1);
+        
+        // Print coord text
+        cv::String textCoord = cv::format("(%.1f, %.1f)", r.posToRobot.x, r.posToRobot.y);
+        cv::putText(img, textCoord, pt + cv::Point2f(10, 10), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 165, 255), 1);
+    }
+}
+
+void LocalizationFusion::drawMarkings(cv::Mat& img) {
+    auto data = brain_->data;
+    
+    for (const auto& m : data->getMarkings()) {
+
+        double mx = data->robotPoseToField.x + m.posToRobot.x * cos(data->robotPoseToField.theta) - m.posToRobot.y * sin(data->robotPoseToField.theta);
+        double my = data->robotPoseToField.y + m.posToRobot.x * sin(data->robotPoseToField.theta) + m.posToRobot.y * cos(data->robotPoseToField.theta);
+        cv::Point2f pt = fieldToImg(mx, my);
+        
+        cv::circle(img, pt, 6, cv::Scalar(255, 0, 255), -1); // Magenta
+        cv::putText(img, m.label, pt + cv::Point2f(8, -8), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 255), 1);
+        
+        // Print coord text below it
+        cv::String textCoord = cv::format("(%.1f, %.1f)", m.posToRobot.x, m.posToRobot.y);
+        cv::putText(img, textCoord, pt + cv::Point2f(8, 8), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 255), 1);
+    }
 }
